@@ -5,6 +5,7 @@ import { getSettings } from "@/lib/settings";
 import { getAlerts, alertCount } from "@/lib/alerts";
 import { ROLE_LABEL, type Role } from "@/lib/constants";
 import { Sidebar, type NavGroup } from "@/components/sidebar";
+import { Shortcuts } from "@/components/shortcuts";
 import { logout } from "../login/actions";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -51,7 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const footer = (
     <div className="flex items-center justify-between gap-2">
       <div className="min-w-0">
-        <div className="text-[13px] font-medium truncate">{user.name}</div>
+        <Link href="/account" className="block text-[13px] font-medium truncate no-underline hover:underline">{user.name}</Link>
         <div className="text-[11.5px] text-muted">{ROLE_LABEL[user.role as Role]}</div>
       </div>
       <form action={logout}>
@@ -62,16 +63,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="lg:flex min-h-screen">
+      <Shortcuts />
       <Sidebar groups={groups} company={s.companyName} footer={footer} />
       <div className="flex-1 min-w-0">
         <div className="no-print hidden lg:flex items-center justify-between gap-4 h-14 px-8 border-b border-rule bg-paper/95 sticky top-0 z-10 backdrop-blur-[2px]">
           <form action="/candidates" className="w-full max-w-[420px]">
-            <input
-              name="q"
-              placeholder="Find candidate by name, phone, passport or code"
-              className="control !min-h-[32px] !py-1 text-[13px]"
-              aria-label="Search candidates"
-            />
+            <div className="relative">
+              <input
+                name="q"
+                data-search
+                placeholder="Find candidate by name, phone, passport or code"
+                className="control !min-h-[32px] !py-1 pr-8 text-[13px]"
+                aria-label="Search candidates"
+              />
+              <kbd className="absolute right-2 top-1/2 -translate-y-1/2 num text-[11px] text-muted border border-rule-2 rounded-[2px] px-1 leading-[16px]">/</kbd>
+            </div>
           </form>
           <div className="flex items-center gap-4 text-[13px]">
             {can(r, "candidate.edit") && (

@@ -8,6 +8,7 @@ import { STAGES, STAGE_LABEL, STAGE_SHORT, type Stage } from "@/lib/constants";
 import { d, relDays } from "@/lib/format";
 import { Bar, Empty, Figure, Figures, PageHeader, Section, TableWrap, cx } from "@/components/ui";
 import { FilterForm } from "@/components/filter-form";
+import { VisaTabs } from "./tabs";
 
 export const metadata = { title: "Visa & deployment" };
 
@@ -86,6 +87,7 @@ export default async function VisaPage({ searchParams }: { searchParams: Promise
   return (
     <>
       <PageHeader title="Visa & deployment" meta="From employer selection to post-arrival check-in. Amber counts have someone over the stage time limit." />
+      <VisaTabs active="overview" />
       <FilterForm>
         <select name="country" defaultValue={sp.country ?? ""} className="control !w-[180px]"><option value="">All countries</option>{countries.map((c) => <option key={c}>{c}</option>)}</select>
         <select name="job" defaultValue={sp.job ?? ""} className="control !w-[260px]"><option value="">All job orders</option>{jobsAll.map((j) => <option key={j.id} value={j.id}>{j.reference} · {j.position}</option>)}</select>

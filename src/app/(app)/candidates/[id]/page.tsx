@@ -17,7 +17,8 @@ import {
   TableWrap, Tag, Textarea, cx,
 } from "@/components/ui";
 import { ActionButton, ActionForm, Submit } from "@/components/forms";
-import { ContactButtons } from "@/components/contact";
+import { ContactButtons, RemindButton } from "@/components/contact";
+import { reminderWriter } from "@/lib/reminder";
 import { OutcomeTag, RefundTag, StageTag, StatusTag } from "@/components/tags";
 import { TemplatePicker } from "@/components/template-picker";
 import { CallLogger } from "./call-logger";
@@ -92,6 +93,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
     balance: money(L.balance), amount: L.nextDue ? money(L.nextDue.outstanding) : "", installment: L.nextDue?.label ?? "your installment",
     dueDate: L.nextDue?.dueDate ? d(L.nextDue.dueDate) : "",
   };
+  const write = await reminderWriter(user.name);
   const callBox = (
     <Section title="Log a call" note={c.nextCallAt ? `Next call ${relDays(c.nextCallAt)}` : undefined}>
       <div className="mb-3"><ContactButtons phone={c.phone} whatsapp={c.whatsapp} /></div>
@@ -191,7 +193,12 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
                         <td className="r"><Money v={row.amount} /></td>
                         <td className="r"><Money v={row.paid} zero="—" /></td>
                         <td className="r font-medium"><Money v={row.outstanding} zero="—" /></td>
-                        <td><Tag tone={STATE_TONE[row.state]}>{STATE_LABEL[row.state]}</Tag></td>
+                        <td className="whitespace-nowrap">
+                          <Tag tone={STATE_TONE[row.state]}>{STATE_LABEL[row.state]}</Tag>
+                          {!closed && row.dueDate && row.outstanding > 0 && can(r, "call.log") && (
+                            <div className="mt-1"><RemindButton phone={contact} text={write({ name: c.fullName, label: row.label, outstanding: row.outstanding, dueDate: row.dueDate, balance: L.balance })} /></div>
+                          )}
+                        </td>
                         {can(r, "ledger.setup") && (
                           <td className="whitespace-nowrap">
                             <details className="inline-block relative">

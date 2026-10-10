@@ -8,8 +8,9 @@ import { btn, cx } from "./ui";
 const PendingCtx = createContext(false);
 
 export function ActionForm({
-  action, children, className, reset = true, onDone, showMessage = true,
+  action, children, className, reset = true, onDone, showMessage = true, id,
 }: {
+  id?: string;
   action: (fd: FormData) => Promise<ActionState>;
   children: ReactNode;
   className?: string;
@@ -22,11 +23,14 @@ export function ActionForm({
   const router = useRouter();
   return (
     <form
+      id={id}
       className={className}
       onSubmit={(e) => {
         e.preventDefault();
         const form = e.currentTarget;
-        const fd = new FormData(form);
+        // include the clicked button's name/value (e.g. Approve vs Reject)
+        const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+        const fd = new FormData(form, submitter);
         start(async () => {
           const r = await action(fd);
           setState(r);
@@ -51,7 +55,7 @@ export function FormMessage({ state }: { state: ActionState }) {
   return (
     <p
       role={state.error ? "alert" : "status"}
-      className={cx("mt-3 text-[13px] px-3 py-2 rounded-[3px] border", state.error ? "text-danger bg-danger-tint border-danger/20" : "text-accent bg-accent-tint border-accent/20")}
+      className={cx("mt-3 text-[13px] px-3 py-2 rounded-[3px] border whitespace-pre-line", state.error ? "text-danger bg-danger-tint border-danger/20" : "text-accent bg-accent-tint border-accent/20")}
     >
       {state.error ?? state.message}
     </p>

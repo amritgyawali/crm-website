@@ -33,3 +33,12 @@ export function WaIcon() {
     </svg>
   );
 }
+
+/** Opens WhatsApp with a payment reminder already written. */
+export function RemindButton({ phone, text, size = "sm" }: { phone: string; text: string; size?: "sm" | "md" }) {
+  return (
+    <a href={waLink(phone, text)} target="_blank" rel="noreferrer" className={btn("quiet", size)} title="Send payment reminder on WhatsApp">
+      <WaIcon /> Remind
+    </a>
+  );
+}

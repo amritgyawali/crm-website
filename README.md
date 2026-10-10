@@ -18,6 +18,7 @@ shows their calls, fee ledger, payments, refunds, documents and visa progress to
 | **Campaigns** | Campaign records with spend; compulsory lead source on every candidate; report of leads, enrolled (paid first installment), deployed, cost per enrolment and money collected. `/api/leads` endpoint for Facebook/Instagram lead forms. |
 | **Office expenses** | Recurring bills (rent, DEWA, internet, phones, software, licences) — paying one creates the next. One-time expenses with photo/PDF receipt and approval. Bills due in 7 / 30 days and overdue. Monthly income minus costs. |
 | **Office** | Attendance with self check-in, payroll calculated from attendance and approved before payment, monthly targets with live progress, staff performance record, management dashboard, reminders page, WhatsApp templates, role-based logins, activity log, Excel/CSV exports, printable PDFs, daily backup. |
+| **Working faster** | Quick views on the candidate list (fees overdue, due this week, call-backs, not contacted, no staff, passport expiring), sortable columns, bulk assign, one-tap WhatsApp payment reminders with the amount and date filled in, Excel/CSV import, visa board view, keyboard shortcuts, sign-in attempt limit, change-your-own-password. |
 
 ## Run it locally
 
@@ -40,9 +41,21 @@ Demo logins (password `office123` for all):
 | ops@office.test | Operations (visa & documents) |
 | sunita@office.test, imran@office.test, grace@office.test | Sales |
 
-To start with an empty system instead, run `npx prisma db push` and create the first admin with
-`npm run db:seed` then delete the demo records — or keep only the users and change their passwords
-under **Settings → Users & roles**. Change the company name and receipt details under **Settings**.
+### Start with your own data (no demo records)
+
+```bash
+npm run setup:empty -- --email you@company.com --name "Your Name" --password "a-long-password"
+```
+
+This creates an empty database and one admin login. Then: set the company details under **Settings**,
+add staff under **Settings → Users & roles**, add partners, job orders and fee packages, and bring in an
+existing candidate list with **Candidates → Import** (Excel or CSV; a template is provided on that page).
+
+Forgot the admin password? `npm run create-admin -- --email you@company.com --password "new-password"`.
+
+### Keyboard shortcuts
+
+`/` search candidates · `n` new candidate · `c` call list
 
 ## Roles
 
