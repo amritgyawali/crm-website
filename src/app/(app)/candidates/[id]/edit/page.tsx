@@ -4,6 +4,7 @@ import { requirePage } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { toDateInput } from "@/lib/dates";
 import { PageHeader, Section } from "@/components/ui";
+import { passportAiEnabled } from "@/lib/passport-ai";
 import { ActionButton } from "@/components/forms";
 import { CandidateForm } from "../../candidate-form";
 import { candidateFormOptions } from "../../options";
@@ -47,6 +48,7 @@ export default async function EditCandidatePage({ params }: { params: Promise<{ 
           defaults={defaults}
           canAssign={can(user.role, "candidate.assign")}
           canStatus={can(user.role, "candidate.assign")}
+          photoScan={passportAiEnabled()}
           submitLabel="Save changes"
         />
       </Section>

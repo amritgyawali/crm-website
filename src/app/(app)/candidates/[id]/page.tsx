@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { computeLedger } from "@/lib/ledger";
 import { getSettings, getStageDays, num } from "@/lib/settings";
-import { d, dt, fillTemplate, money, relDays } from "@/lib/format";
+import { d, dt, fillTemplate, midSentence, money, relDays } from "@/lib/format";
 import { toDateInput } from "@/lib/dates";
 import {
   CLOSED_STATUSES, DOCUMENT_KINDS, DOCUMENT_KIND_LABEL, LEAD_SOURCE_LABEL, PAYMENT_METHODS, PAYMENT_METHOD_LABEL,
@@ -54,6 +54,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
       callLogs: { orderBy: { createdAt: "desc" }, take: 25, include: { user: { select: { name: true } } } },
       stageEvents: { orderBy: [{ date: "asc" }, { createdAt: "asc" }], include: { user: { select: { name: true } } } },
       documents: { orderBy: { createdAt: "desc" }, include: { uploadedBy: { select: { name: true } } } },
+      messages: { orderBy: { createdAt: "desc" }, take: 10, include: { user: { select: { name: true } } } },
     },
   });
   if (!c) notFound();
@@ -90,7 +91,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
   const vars = {
     name: c.fullName.split(" ")[0], fullName: c.fullName, staff: user.name, company: s.companyName, address: s.companyAddress,
     job: c.jobOrder ? `${c.jobOrder.position} (${c.jobOrder.country})` : "the job",
-    balance: money(L.balance), amount: L.nextDue ? money(L.nextDue.outstanding) : "", installment: L.nextDue?.label ?? "your installment",
+    balance: money(L.balance), amount: L.nextDue ? money(L.nextDue.outstanding) : "", installment: midSentence(L.nextDue?.label ?? "your installment"),
     dueDate: L.nextDue?.dueDate ? d(L.nextDue.dueDate) : "",
   };
   const write = await reminderWriter(user.name);
@@ -119,7 +120,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
         actions={
           <>
             <ContactButtons phone={c.phone} whatsapp={c.whatsapp} size="md" />
-            <TemplatePicker phone={contact} templates={tpl} />
+            <TemplatePicker phone={contact} templates={tpl} candidateId={c.id} />
             {can(r, "candidate.edit") && <LinkButton href={`/candidates/${c.id}/edit`}>Edit</LinkButton>}
           </>
         }
@@ -196,7 +197,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
                         <td className="whitespace-nowrap">
                           <Tag tone={STATE_TONE[row.state]}>{STATE_LABEL[row.state]}</Tag>
                           {!closed && row.dueDate && row.outstanding > 0 && can(r, "call.log") && (
-                            <div className="mt-1"><RemindButton phone={contact} text={write({ name: c.fullName, label: row.label, outstanding: row.outstanding, dueDate: row.dueDate, balance: L.balance })} /></div>
+                            <div className="mt-1"><RemindButton phone={contact} candidateId={c.id} text={write({ name: c.fullName, label: row.label, outstanding: row.outstanding, dueDate: row.dueDate, balance: L.balance })} /></div>
                           )}
                         </td>
                         {can(r, "ledger.setup") && (
@@ -425,7 +426,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
                       </div>
                       {ev && (ev.note || ev.location || ev.flightDetails || ev.refusalReason || ev.appointmentAt) && (
                         <div className="text-[12.5px] text-ink-2 mt-0.5 space-y-0.5">
-                          {ev.appointmentAt && <div>Appointment {dt(ev.appointmentAt)}{ev.location ? `, ${ev.location}` : ""}</div>}
+                          {ev.appointmentAt && <div>{ev.stage === "FLIGHT_BOOKED" ? "Departs" : "Appointment"} {dt(ev.appointmentAt)}{ev.location ? `, ${ev.location}` : ""}</div>}
                           {ev.flightDetails && <div>{ev.flightDetails}</div>}
                           {ev.refusalReason && <div className="text-danger">Reason: {ev.refusalReason}</div>}
                           {ev.note && <div className="text-muted">{ev.note}</div>}
@@ -515,6 +516,23 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
               </ul>
             )}
           </Section>
+
+          {c.messages.length > 0 && (
+            <Section title="WhatsApp sent" note={`last ${c.messages.length}`} flush>
+              <ul className="divide-y divide-rule max-h-[300px] overflow-y-auto">
+                {c.messages.map((msg) => (
+                  <li key={msg.id} className="px-4 py-2.5">
+                    <div className="flex items-center justify-between gap-2 text-[12px]">
+                      <span className="font-medium">{msg.template ?? "Message"}</span>
+                      <span className="num text-muted">{dt(msg.createdAt)}</span>
+                    </div>
+                    <div className="text-[12px] text-muted">{msg.user.name}</div>
+                    <p className="text-[12.5px] text-ink-2 mt-0.5 line-clamp-2">{msg.body}</p>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
 
           <Section title="Details">
             <KV

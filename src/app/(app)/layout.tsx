@@ -6,6 +6,7 @@ import { getAlerts, alertCount } from "@/lib/alerts";
 import { ROLE_LABEL, type Role } from "@/lib/constants";
 import { Sidebar, type NavGroup } from "@/components/sidebar";
 import { Shortcuts } from "@/components/shortcuts";
+import { CommandPalette, PaletteButton } from "@/components/command-palette";
 import { logout } from "../login/actions";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       items: [
         { href: "/", label: "Today" },
         ...(can(r, "call.log") ? [{ href: "/calls", label: "Call list" }] : []),
+        { href: "/calendar", label: "Calendar" },
         { href: "/alerts", label: "Reminders", count: alerts, urgent: alerts > 0 },
       ],
     },
@@ -37,17 +39,31 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         ...(can(r, "finance.view") || can(r, "payment.record") ? [{ href: "/finance", label: "Fees & collections" }] : []),
         ...(can(r, "expenses.manage") ? [{ href: "/expenses", label: "Office expenses" }] : []),
         ...(can(r, "campaigns.view") ? [{ href: "/campaigns", label: "Campaigns" }] : []),
+        ...(can(r, "call.log") ? [{ href: "/messages", label: "WhatsApp sending" }] : []),
       ],
     },
     {
       label: "Office",
       items: [
         { href: "/staff", label: can(r, "staff.manage") ? "Staff" : "My targets" },
-        ...(can(r, "reports.view") ? [{ href: "/reports", label: "Reports & export" }] : []),
+        ...(can(r, "reports.view") ? [{ href: "/insights", label: "Insights" }, { href: "/reports", label: "Reports & export" }] : []),
         ...(can(r, "settings.manage") ? [{ href: "/settings", label: "Settings" }] : []),
       ],
     },
   ].filter((g) => g.items.length);
+
+  // everything the palette can jump to, beyond the sidebar
+  const pages = [
+    ...groups.flatMap((g) => g.items.map((i) => ({ label: i.label, href: i.href }))),
+    ...(can(r, "candidate.edit") ? [{ label: "New candidate", href: "/candidates/new", keywords: "add lead register" }, { label: "Import candidates", href: "/candidates/import", keywords: "excel csv upload" }] : []),
+    { label: "Visa board", href: "/visa/board", keywords: "kanban stages" },
+    { label: "Candidates: fees overdue", href: "/candidates?view=overdue", keywords: "late unpaid" },
+    { label: "Candidates: not contacted", href: "/candidates?view=stale", keywords: "forgotten leads" },
+    ...(can(r, "finance.view") ? [{ label: "Daily collections", href: "/finance/collections", keywords: "cash bank day sheet" }, { label: "Refunds", href: "/finance/refunds" }, { label: "Fee packages", href: "/finance/packages" }] : []),
+    ...(can(r, "call.log") ? [{ label: "Call counts", href: "/calls/stats", keywords: "statistics performance" }] : []),
+    ...(can(r, "settings.manage") ? [{ label: "Users & roles", href: "/settings/users", keywords: "staff login password" }, { label: "Activity log", href: "/settings/activity", keywords: "audit history" }, { label: "Duplicates", href: "/settings/duplicates", keywords: "merge clean data" }] : []),
+    { label: "My account", href: "/account", keywords: "password" },
+  ];
 
   const footer = (
     <div className="flex items-center justify-between gap-2">
@@ -64,6 +80,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="lg:flex min-h-screen">
       <Shortcuts />
+      <CommandPalette pages={pages} />
       <Sidebar groups={groups} company={s.companyName} footer={footer} />
       <div className="flex-1 min-w-0">
         <div className="no-print hidden lg:flex items-center justify-between gap-4 h-14 px-8 border-b border-rule bg-paper/95 sticky top-0 z-10 backdrop-blur-[2px]">
@@ -80,6 +97,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
           </form>
           <div className="flex items-center gap-4 text-[13px]">
+            <PaletteButton className="text-muted hover:text-ink" />
             {can(r, "candidate.edit") && (
               <Link href="/candidates/new" className="no-underline font-medium text-accent hover:underline">+ New candidate</Link>
             )}

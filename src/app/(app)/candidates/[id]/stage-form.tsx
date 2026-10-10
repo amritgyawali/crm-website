@@ -39,9 +39,14 @@ export function StageForm({ action, suggested, paid }: { action: (fd: FormData) 
         </FormGrid>
       )}
       {stage === "FLIGHT_BOOKED" && (
-        <Field label="Flight details">
-          <Input name="flightDetails" placeholder="Airline, flight no., date, DXB → destination, PNR" required />
-        </Field>
+        <FormGrid cols={2}>
+          <Field label="Departure date & time">
+            <Input name="appointmentAt" type="datetime-local" required />
+          </Field>
+          <Field label="Flight details">
+            <Input name="flightDetails" placeholder="Airline, flight no., DXB → destination, PNR" required />
+          </Field>
+        </FormGrid>
       )}
       {result === "REFUSED" && (
         <div className="p-3 bg-danger-tint border border-danger/20 rounded-[3px] space-y-3">

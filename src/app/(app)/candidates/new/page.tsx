@@ -1,6 +1,7 @@
 import { requirePage } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { PageHeader, Section } from "@/components/ui";
+import { passportAiEnabled } from "@/lib/passport-ai";
 import { CandidateForm } from "../candidate-form";
 import { candidateFormOptions } from "../options";
 import { createCandidate } from "../actions";
@@ -20,6 +21,7 @@ export default async function NewCandidatePage({ searchParams }: { searchParams:
           {...opts}
           defaults={{ jobOrderId: sp.job ?? null, campaignId: sp.campaign ?? null, leadSource: sp.campaign ? "CAMPAIGN" : null, assignedToId: user.role === "SALES" ? user.id : null }}
           canAssign={can(user.role, "candidate.assign")}
+          photoScan={passportAiEnabled()}
           submitLabel="Save candidate"
         />
       </Section>

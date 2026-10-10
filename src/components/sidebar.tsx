@@ -51,9 +51,14 @@ export function Sidebar({ groups, company, footer }: { groups: NavGroup[]; compa
       {/* mobile bar */}
       <div className="lg:hidden no-print sticky top-0 z-30 flex items-center justify-between h-12 px-4 bg-sheet border-b border-rule">
         <span className="font-serif font-semibold text-[16px] truncate">{company}</span>
-        <button type="button" onClick={() => setOpen((o) => !o)} className="text-[13px] font-medium px-2 py-1 border border-rule-2 rounded-[3px]" aria-expanded={open}>
-          {open ? "Close" : "Menu"}
-        </button>
+        <span className="flex gap-2">
+          <button type="button" onClick={() => window.dispatchEvent(new Event("open-palette"))} className="text-[13px] font-medium px-2 py-1 border border-rule-2 rounded-[3px]">
+            Search
+          </button>
+          <button type="button" onClick={() => setOpen((o) => !o)} className="text-[13px] font-medium px-2 py-1 border border-rule-2 rounded-[3px]" aria-expanded={open}>
+            {open ? "Close" : "Menu"}
+          </button>
+        </span>
       </div>
       {open && (
         <div className="lg:hidden fixed inset-0 top-12 z-20 bg-sheet flex flex-col">

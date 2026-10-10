@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { getSettings } from "./settings";
-import { d, fillTemplate, money } from "./format";
+import { d, fillTemplate, midSentence, money } from "./format";
 
 const FALLBACK =
   "Hello {name}, this is {staff} from {company}. A reminder that {installment} of {amount} is due on {dueDate}. Your remaining balance is {balance}. Please reply once paid. Thank you.";
@@ -12,6 +12,6 @@ export async function reminderWriter(staffName: string) {
   return (x: { name: string; label: string; outstanding: number; dueDate: Date | null; balance: number }) =>
     fillTemplate(body, {
       name: x.name.split(" ")[0], fullName: x.name, staff: staffName, company: s.companyName, address: s.companyAddress,
-      installment: x.label, amount: money(x.outstanding), dueDate: x.dueDate ? d(x.dueDate) : "", balance: money(x.balance),
+      installment: midSentence(x.label), amount: money(x.outstanding), dueDate: x.dueDate ? d(x.dueDate) : "", balance: money(x.balance),
     });
 }

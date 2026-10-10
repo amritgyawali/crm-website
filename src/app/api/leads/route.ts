@@ -1,8 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { db } from "@/lib/db";
-import { audit } from "@/lib/audit";
-import { nextCandidateCode } from "@/lib/numbering";
+import { intakeLead } from "@/lib/lead-intake";
 
 /**
  * Lead intake for Facebook / Instagram lead forms (via Zapier, Make or a Meta webhook relay).
@@ -26,25 +24,11 @@ export async function POST(req: NextRequest) {
   const phone = s("phone") || s("phone_number");
   if (!name || !phone) return NextResponse.json({ error: "name and phone are required" }, { status: 422 });
 
-  const external = s("adId") || s("formId") || s("ad_id") || s("form_id");
-  const campaign = s("campaignId")
-    ? await db.campaign.findUnique({ where: { id: s("campaignId") } })
-    : external
-      ? await db.campaign.findFirst({ where: { externalId: external } })
-      : null;
-
-  const existing = await db.candidate.findFirst({ where: { phone } });
-  if (existing) return NextResponse.json({ ok: true, duplicate: true, id: existing.id, code: existing.code });
-
-  const c = await db.$transaction(async (tx) =>
-    tx.candidate.create({
-      data: {
-        code: await nextCandidateCode(tx), fullName: name, phone, email: s("email") || null, nationality: s("nationality") || "Unknown",
-        leadSource: campaign ? "CAMPAIGN" : "OTHER", campaignId: campaign?.id ?? null, jobOrderId: campaign?.jobOrderId ?? null,
-        sourceNote: [s("note"), external && !campaign ? `Unmatched ad/form ${external}` : ""].filter(Boolean).join(" · ") || "Imported from lead form",
-      },
-    }),
-  );
-  await audit({ action: "CREATE", entity: "Candidate", entityId: c.id, summary: `Lead imported: ${c.fullName}${campaign ? ` (${campaign.name})` : ""}` });
+  const r = await intakeLead({
+    name, phone, email: s("email"), nationality: s("nationality"), note: s("note"), campaignId: s("campaignId") || null,
+    externalIds: [s("adId"), s("formId"), s("ad_id"), s("form_id")],
+  });
+  if (!r.created) return NextResponse.json({ ok: true, duplicate: true, id: r.candidate.id, code: r.candidate.code });
+  const c = r.candidate;
   return NextResponse.json({ ok: true, id: c.id, code: c.code }, { status: 201 });
 }

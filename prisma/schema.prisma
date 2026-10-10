@@ -40,6 +40,7 @@ model User {
   expensesApproved   Expense[]         @relation("ExpenseApprovedBy")
   partnerNotes       PartnerNote[]
   documents          Document[]
+  messages           MessageLog[]
 }
 
 // ---------------------------------------------------------------- partners
@@ -266,6 +267,7 @@ model Candidate {
   callLogs     CallLog[]
   stageEvents  StageEvent[]
   documents    Document[]
+  messages     MessageLog[]
 
   @@index([status])
   @@index([assignedToId])
@@ -371,6 +373,23 @@ model Document {
   uploadedById String
   uploadedBy   User      @relation(fields: [uploadedById], references: [id])
   createdAt    DateTime  @default(now())
+}
+
+// WhatsApp messages sent from the CRM (opened in WhatsApp by a staff member).
+model MessageLog {
+  id          String     @id @default(cuid())
+  candidateId String?
+  candidate   Candidate? @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  partnerId   String?
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  channel     String     @default("WHATSAPP")
+  template    String?
+  body        String
+  createdAt   DateTime   @default(now())
+
+  @@index([candidateId, createdAt])
+  @@index([createdAt])
 }
 
 // ---------------------------------------------------------------- office costs

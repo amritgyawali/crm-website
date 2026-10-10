@@ -26,7 +26,7 @@ const STAGES = ["SELECTED", "WP_SUBMITTED", "WP_APPROVED", "VFS_BOOKED", "VISA_A
 
 async function wipe() {
   const tables = [
-    "auditLog", "callLog", "stageEvent", "document", "payment", "refund", "installment", "candidate",
+    "auditLog", "messageLog", "callLog", "stageEvent", "document", "payment", "refund", "installment", "candidate",
     "campaign", "feePackageStep", "feePackage", "feeRule", "partnerEntry", "partnerNote", "partnerAgreement",
     "partnerContact", "jobOrder", "partner", "bill", "expense", "attendance", "payroll", "target",
     "messageTemplate", "stageSetting", "setting", "user",
@@ -342,7 +342,7 @@ async function main() {
             candidateId: cand.id, stage, date, userId: ops.id, result: refusedHere ? "REFUSED" : "DONE",
             refusalReason: refusedHere ? (plan.refused === "WP" ? "Employer quota exceeded for this permit type" : "Insufficient proof of qualifications") : null,
             location: stage === "VFS_BOOKED" ? pick(["VFS Global, Wafi Mall, Dubai", "Embassy, Abu Dhabi"]) : null,
-            appointmentAt: stage === "VFS_BOOKED" ? addDays(date, int(5, 20)) : null,
+            appointmentAt: stage === "VFS_BOOKED" ? at(addDays(date, int(5, 20)), int(9, 14)) : stage === "FLIGHT_BOOKED" ? at(addDays(date, 9), int(2, 22)) : null,
             flightDetails: stage === "FLIGHT_BOOKED" ? `${pick(["FZ", "EK", "LO", "W6"])} ${int(100, 1999)}, DXB → ${jw.job.city}, ${format(addDays(date, 9), "d MMM")}` : null,
             note: s === 0 ? `Selected in interview for ${jw.job.employer}` : null,
           },

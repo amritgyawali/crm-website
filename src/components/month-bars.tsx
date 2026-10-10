@@ -3,7 +3,7 @@ const A = "#1f7a55";
 const B = "#c4793a";
 const fmt = (n: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 
-export function MonthBars({ data, aLabel, bLabel, height = 180 }: { data: { label: string; a: number; b: number }[]; aLabel: string; bLabel: string; height?: number }) {
+export function MonthBars({ data, aLabel, bLabel, height = 180, showNet = true }: { data: { label: string; a: number; b: number }[]; aLabel: string; bLabel: string; height?: number; showNet?: boolean }) {
   const max = Math.max(1, ...data.flatMap((d) => [d.a, d.b]));
   return (
     <figure>
@@ -26,7 +26,7 @@ export function MonthBars({ data, aLabel, bLabel, height = 180 }: { data: { labe
                 <div className="font-medium">{d.label}</div>
                 <div className="num">{aLabel} {fmt(d.a)}</div>
                 <div className="num">{bLabel} {fmt(d.b)}</div>
-                <div className="num">Net {fmt(d.a - d.b)}</div>
+                {showNet && <div className="num">Net {fmt(d.a - d.b)}</div>}
               </div>
             </div>
           ))}
@@ -36,7 +36,11 @@ export function MonthBars({ data, aLabel, bLabel, height = 180 }: { data: { labe
         {data.map((d) => (
           <div key={d.label} className="flex-1 text-center text-[11.5px] text-muted leading-tight">
             {d.label}
-            <div className={`num ${d.a - d.b < 0 ? "text-danger" : "text-ink-2"}`}>{d.a - d.b >= 0 ? "+" : "−"}{fmt(Math.abs(d.a - d.b))}</div>
+            {showNet ? (
+              <div className={`num ${d.a - d.b < 0 ? "text-danger" : "text-ink-2"}`}>{d.a - d.b >= 0 ? "+" : "−"}{fmt(Math.abs(d.a - d.b))}</div>
+            ) : (
+              <div className="num text-ink-2">{fmt(d.a)} / {fmt(d.b)}</div>
+            )}
           </div>
         ))}
       </div>
