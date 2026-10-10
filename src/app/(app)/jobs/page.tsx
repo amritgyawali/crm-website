@@ -7,6 +7,7 @@ import { d } from "@/lib/format";
 import { Bar, Empty, LinkButton, PageHeader, Section, Select, TableWrap } from "@/components/ui";
 import { FilterForm } from "@/components/filter-form";
 import { JobStatusTag } from "@/components/tags";
+import { RowNav } from "@/components/row-nav";
 
 export const metadata = { title: "Job orders" };
 
@@ -39,7 +40,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
       </FilterForm>
       <Section flush>
         {jobs.length === 0 ? <Empty>No job orders.</Empty> : (
-          <TableWrap>
+          <RowNav><TableWrap>
             <table className="grid-table">
               <thead><tr><th>Reference</th><th>Position</th><th>Employer / partner</th><th>Country</th><th>Status</th><th className="r">Leads</th><th className="r">Enrolled</th><th className="r">In process</th><th className="w-[140px]">Deployed / vacancies</th><th>Deadline</th></tr></thead>
               <tbody>
@@ -62,7 +63,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
                 })}
               </tbody>
             </table>
-          </TableWrap>
+          </TableWrap></RowNav>
         )}
       </Section>
     </>

@@ -7,7 +7,7 @@ type P = { name: string; country: string; type: string; phone: string | null; wh
 
 export function PartnerForm({ action, p }: { action: (fd: FormData) => Promise<ActionState>; p?: P }) {
   return (
-    <ActionForm action={action} reset={false} className="space-y-5">
+    <ActionForm action={action} reset={false} guard className="space-y-5">
       <FormGrid cols={3}>
         <Field label="Company name" required><Input name="name" required defaultValue={p?.name} /></Field>
         <Field label="Country" required><Input name="country" required defaultValue={p?.country} /></Field>

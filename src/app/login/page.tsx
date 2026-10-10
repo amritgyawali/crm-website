@@ -11,7 +11,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const year = new Date().getFullYear();
   return (
     <main className="min-h-screen grid lg:grid-cols-[1fr_440px]">
-      <div className="hidden lg:flex flex-col justify-between p-12 border-r border-rule bg-[#ebe7de]">
+      <div className="hidden lg:flex flex-col justify-between p-12 border-r border-rule bg-well">
         <div className="font-serif text-[22px] font-semibold">{s.companyName}</div>
         <div className="max-w-md">
           <p className="font-serif text-[30px] leading-[1.2] text-ink-2">

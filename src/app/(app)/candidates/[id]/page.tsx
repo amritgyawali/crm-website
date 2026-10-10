@@ -22,6 +22,8 @@ import { reminderWriter } from "@/lib/reminder";
 import { OutcomeTag, RefundTag, StageTag, StatusTag } from "@/components/tags";
 import { TemplatePicker } from "@/components/template-picker";
 import { CallLogger } from "./call-logger";
+import { StickyBar } from "@/components/sticky-bar";
+import { TrackRecent } from "@/components/recent";
 import { StageForm } from "./stage-form";
 import {
   assignCandidate, closeCase, deleteCallLog, deleteDocument, deleteInstallment, deletePayment, deleteStageEvent, logCall,
@@ -95,8 +97,8 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
     dueDate: L.nextDue?.dueDate ? d(L.nextDue.dueDate) : "",
   };
   const write = await reminderWriter(user.name);
-  const callBox = (
-    <Section title="Log a call" note={c.nextCallAt ? `Next call ${relDays(c.nextCallAt)}` : undefined}>
+  const callBox = (boxId: string) => (
+    <Section id={boxId} title="Log a call" note={c.nextCallAt ? `Next call ${relDays(c.nextCallAt)}` : undefined}>
       <div className="mb-3"><ContactButtons phone={c.phone} whatsapp={c.whatsapp} /></div>
       <CallLogger action={logCall.bind(null, c.id)} />
     </Section>
@@ -124,6 +126,21 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
             {can(r, "candidate.edit") && <LinkButton href={`/candidates/${c.id}/edit`}>Edit</LinkButton>}
           </>
         }
+      />
+
+      <TrackRecent item={{ group: "Candidates", title: c.fullName, detail: `${c.code} · ${c.phone}`, href: `/candidates/${c.id}` }} />
+      <StickyBar
+        title={c.fullName}
+        sub={<>{c.code} · {c.status.replace("_", " ").toLowerCase()}{c.stage && !closed ? ` · ${STAGE_LABEL[c.stage as Stage]}` : ""}</>}
+        figures={[
+          { label: "Balance", value: closed ? "closed" : money(L.balance, { whole: true }), tone: L.overdue ? "red" : undefined },
+          ...(L.nextDue?.dueDate ? [{ label: "Next due", value: d(L.nextDue.dueDate, "d MMM") }] : []),
+        ]}
+        sections={[
+          { id: "ledger", label: "Fees" }, { id: "visa", label: "Visa" }, { id: "documents", label: "Documents" },
+          ...(can(r, "call.log") ? [{ id: "log", label: "Log call" }] : []), { id: "calls", label: "Calls" }, { id: "details", label: "Details" },
+        ]}
+        actions={<ContactButtons phone={c.phone} whatsapp={c.whatsapp} />}
       />
 
       <div className="space-y-2 mb-5">
@@ -165,13 +182,14 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
       </Figures>
 
       {/* on phones the call box comes first: sales staff log calls from their mobiles */}
-      {can(r, "call.log") && <div className="xl:hidden mt-5">{callBox}</div>}
+      {can(r, "call.log") && <div className="xl:hidden mt-5">{callBox("log-phone")}</div>}
 
       <div className="grid gap-5 mt-5 xl:grid-cols-[minmax(0,1fr)_370px]">
         {/* ------------------------------------------------ left column */}
         <div className="space-y-5 min-w-0">
           {/* ledger */}
           <Section
+            id="ledger"
             title="Fee ledger"
             note={c.feePackage ? c.feePackage.name : undefined}
             flush
@@ -400,7 +418,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
           </Section>
 
           {/* visa & deployment */}
-          <Section title="Visa & deployment" note={c.jobOrder ? `${c.jobOrder.employer}, ${c.jobOrder.country}` : "No job order linked"} flush>
+          <Section id="visa" title="Visa & deployment" note={c.jobOrder ? `${c.jobOrder.employer}, ${c.jobOrder.country}` : "No job order linked"} flush>
             <ol className="px-4 py-3">
               {STAGES.map((st, i) => {
                 const evs = c.stageEvents.filter((e) => e.stage === st.value);
@@ -413,7 +431,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
                     <div className="flex flex-col items-center">
                       <span className={cx(
                         "num text-[11px] w-[22px] h-[22px] flex items-center justify-center rounded-full border",
-                        refused ? "bg-danger text-white border-danger" : reached ? "bg-ink text-paper border-ink" : "border-rule-2 text-muted bg-white",
+                        refused ? "bg-danger text-sheet border-danger" : reached ? "bg-ink text-paper border-ink" : "border-rule-2 text-muted bg-field",
                         current && "ring-2 ring-mark ring-offset-1",
                       )}>{refused ? "×" : i + 1}</span>
                       {i < STAGES.length - 1 && <span className={cx("w-px flex-1 min-h-[14px]", reached ? "bg-ink" : "bg-rule-2")} />}
@@ -443,7 +461,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
             {!closed && can(r, "stage.update") && ["ENROLLED", "IN_PROCESS", "DEPLOYED"].includes(c.status) && (
               <div className="p-4 border-t border-rule">
                 <Disclose label="Update stage" open={c.status === "IN_PROCESS"}>
-                  <div className="pt-2"><StageForm action={updateStage.bind(null, c.id)} suggested={suggested} paid={paidSoFar} /></div>
+                  <div className="pt-2"><StageForm action={updateStage.bind(null, c.id)} suggested={suggested} paid={paidSoFar} today={toDateInput(now)} /></div>
                 </Disclose>
               </div>
             )}
@@ -453,7 +471,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
           </Section>
 
           {/* documents */}
-          <Section title="Documents" note={`${c.documents.length} on file`} flush>
+          <Section id="documents" title="Documents" note={`${c.documents.length} on file`} flush>
             {c.documents.length === 0 ? (
               <Empty>No documents uploaded.</Empty>
             ) : (
@@ -489,9 +507,9 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
 
         {/* ------------------------------------------------ right column */}
         <div className="space-y-5 min-w-0">
-          {can(r, "call.log") && <div className="hidden xl:block">{callBox}</div>}
+          {can(r, "call.log") && <div className="hidden xl:block">{callBox("log")}</div>}
 
-          <Section title="Calls" note={`${callCount} total`} flush>
+          <Section id="calls" title="Calls" note={`${callCount} total`} flush>
             {c.callLogs.length === 0 ? (
               <Empty>No calls yet.</Empty>
             ) : (
@@ -534,7 +552,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
             </Section>
           )}
 
-          <Section title="Details">
+          <Section id="details" title="Details">
             <KV
               items={[
                 ["Phone", <span className="num" key="p">{c.phone}</span>],

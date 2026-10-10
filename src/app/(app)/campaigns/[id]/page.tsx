@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { TrackRecent } from "@/components/recent";
 import { requirePage } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { PLATFORM_LABEL } from "@/lib/constants";
@@ -26,6 +27,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   ]);
   return (
     <>
+      <TrackRecent item={{ group: "Campaigns", title: c.name, href: `/campaigns/${c.id}` }} />
       <PageHeader
         back={{ href: "/campaigns", label: "Campaigns" }}
         title={c.name}

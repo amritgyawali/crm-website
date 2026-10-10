@@ -27,6 +27,7 @@ export function Sidebar({ groups, company, footer }: { groups: NavGroup[]; compa
                 <li key={it.href}>
                   <Link
                     href={it.href}
+                    aria-current={active ? "page" : undefined}
                     className={cx(
                       "flex items-center justify-between gap-2 pl-5 pr-4 py-[5px] no-underline text-[13.5px] border-l-[3px]",
                       active ? "border-ink bg-well font-semibold text-ink" : "border-transparent text-ink-2 hover:text-ink hover:bg-well/60",
@@ -34,7 +35,7 @@ export function Sidebar({ groups, company, footer }: { groups: NavGroup[]; compa
                   >
                     <span>{it.label}</span>
                     {!!it.count && (
-                      <span className={cx("num text-[11.5px] px-1.5 rounded-[2px]", it.urgent ? "bg-danger text-white" : "text-muted")}>{it.count}</span>
+                      <span className={cx("num text-[11.5px] px-1.5 rounded-[2px]", it.urgent ? "bg-danger text-sheet" : "text-muted")}>{it.count}</span>
                     )}
                   </Link>
                 </li>

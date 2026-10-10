@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { TrackRecent } from "@/components/recent";
 import { requireUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { computeLedger } from "@/lib/ledger";
@@ -39,6 +40,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
 
   return (
     <>
+      <TrackRecent item={{ group: "Job orders", title: `${j.reference} · ${j.position}`, detail: j.country, href: `/jobs/${j.id}` }} />
       <PageHeader
         back={{ href: "/jobs", label: "Job orders" }}
         title={<>{j.position} <span className="text-muted font-normal">· {j.country}</span></>}

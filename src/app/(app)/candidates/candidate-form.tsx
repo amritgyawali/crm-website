@@ -28,7 +28,7 @@ export function CandidateForm({
   const v = (k: string) => defaults[k] ?? "";
 
   return (
-    <ActionForm action={action} reset={false} className="space-y-6">
+    <ActionForm action={action} reset={false} guard className="space-y-6">
       <PassportFill photoEnabled={photoScan} />
       <fieldset>
         <legend className="label-caps mb-3">Where did this candidate come from?</legend>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cx } from "./ui";
+import { readRecent, type RecentItem } from "./recent";
 
 type Item = { group: string; title: string; detail?: string; href: string; keywords?: string };
 
@@ -16,6 +17,7 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
   const [hits, setHits] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0);
+  const [recent, setRecent] = useState<RecentItem[]>([]);
   const input = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -37,6 +39,7 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
 
   useEffect(() => {
     if (open) {
+      setRecent(readRecent());
       setQ("");
       setHits([]);
       setActive(0);
@@ -73,8 +76,9 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
       .filter((p) => !t || p.label.toLowerCase().includes(t) || p.keywords?.toLowerCase().includes(t))
       .slice(0, t ? 6 : 12)
       .map((p) => ({ group: "Go to", title: p.label, href: p.href }));
-    return [...hits, ...pageHits];
-  }, [hits, pages, q]);
+    const recents = t ? [] : recent.map((r) => ({ group: "Recently opened", title: r.title, detail: r.detail, href: r.href }));
+    return [...recents, ...hits, ...pageHits];
+  }, [hits, pages, q, recent]);
 
   useEffect(() => setActive(0), [items.length]);
 
@@ -106,7 +110,7 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
           <span className="text-[11.5px] text-muted">{loading ? "searching…" : "Esc to close"}</span>
         </div>
         <ul className="max-h-[56vh] overflow-y-auto py-1" role="listbox">
-          {items.length === 0 && <li className="px-4 py-6 text-[13px] text-muted">{q.trim().length < 2 ? "Type at least two letters." : "Nothing found."}</li>}
+          {items.length === 0 && <li className="px-4 py-6 text-[13px] text-muted">{q.trim().length < 2 ? "Type at least two letters." : loading ? "Searching…" : "Nothing found."}</li>}
           {items.map((it, i) => {
             const head = it.group !== lastGroup ? it.group : null;
             lastGroup = it.group;

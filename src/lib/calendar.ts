@@ -7,14 +7,14 @@ import { CLOSED_STATUSES } from "./constants";
 import { money } from "./format";
 
 export const EVENT_TYPES = [
-  { key: "fee", label: "Fee due", color: "#1f7a55" },
-  { key: "call", label: "Call-back", color: "#45423c" },
-  { key: "embassy", label: "Embassy / VFS", color: "#2d4b66" },
-  { key: "flight", label: "Flight", color: "#8f5600" },
-  { key: "checkin", label: "Post-arrival check-in", color: "#5b7f3a" },
-  { key: "bill", label: "Office bill", color: "#c4793a" },
-  { key: "partner", label: "Partner", color: "#78736a" },
-  { key: "job", label: "Job deadline", color: "#78736a" },
+  { key: "fee", label: "Fee due", color: "var(--color-chart-a)" },
+  { key: "call", label: "Call-back", color: "var(--color-ink-2)" },
+  { key: "embassy", label: "Embassy / VFS", color: "var(--color-info)" },
+  { key: "flight", label: "Flight", color: "var(--color-warn)" },
+  { key: "checkin", label: "Post-arrival check-in", color: "var(--color-accent-2)" },
+  { key: "bill", label: "Office bill", color: "var(--color-chart-b)" },
+  { key: "partner", label: "Partner", color: "var(--color-muted)" },
+  { key: "job", label: "Job deadline", color: "var(--color-muted)" },
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number]["key"];
 

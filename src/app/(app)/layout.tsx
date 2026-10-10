@@ -1,4 +1,10 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { Suspense } from "react";
+import { ReminderBell, type BellGroup } from "@/components/reminder-bell";
+import { Toaster } from "@/components/toaster";
+import { NavProgress } from "@/components/nav-progress";
 import { requireUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { getSettings } from "@/lib/settings";
@@ -12,7 +18,12 @@ import { logout } from "../login/actions";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const s = await getSettings();
-  const alerts = alertCount(await getAlerts(user));
+  const alertGroups = await getAlerts(user);
+  const alerts = alertCount(alertGroups);
+  const bell: BellGroup[] = alertGroups.map((g) => ({
+    key: g.key, title: g.title, count: g.items.length,
+    items: g.items.slice(0, 3).map((i) => ({ id: i.id, title: i.title, detail: i.detail, href: i.href, tone: i.tone })),
+  }));
   const r = user.role;
 
   const groups: NavGroup[] = [
@@ -65,7 +76,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { label: "My account", href: "/account", keywords: "password" },
   ];
 
+  const themeCookie = (await cookies()).get("theme")?.value;
+  const theme = themeCookie === "light" || themeCookie === "dark" ? themeCookie : "system";
   const footer = (
+    <div className="space-y-2.5">
+    <ThemeSwitch initial={theme} />
     <div className="flex items-center justify-between gap-2">
       <div className="min-w-0">
         <Link href="/account" className="block text-[13px] font-medium truncate no-underline hover:underline">{user.name}</Link>
@@ -75,10 +90,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <button className="text-[12px] text-muted hover:text-ink underline underline-offset-2">Sign out</button>
       </form>
     </div>
+    </div>
   );
 
   return (
     <div className="lg:flex min-h-screen">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:bg-ink focus:text-paper focus:px-3 focus:py-1.5 focus:rounded-[3px]">Skip to content</a>
+      <Suspense fallback={null}><NavProgress /></Suspense>
+      <Toaster />
       <Shortcuts />
       <CommandPalette pages={pages} />
       <Sidebar groups={groups} company={s.companyName} footer={footer} />
@@ -98,13 +117,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
           <div className="flex items-center gap-4 text-[13px]">
             <PaletteButton className="text-muted hover:text-ink" />
+            <ReminderBell groups={bell} />
             {can(r, "candidate.edit") && (
               <Link href="/candidates/new" className="no-underline font-medium text-accent hover:underline">+ New candidate</Link>
             )}
             <span className="text-muted num">{new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</span>
           </div>
         </div>
-        <main className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-[1400px]">{children}</main>
+        <main id="main" tabIndex={-1} className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-[1400px] outline-none">{children}</main>
       </div>
     </div>
   );

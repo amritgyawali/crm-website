@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { subMonths, startOfWeek } from "date-fns";
+import { addDays, format, subDays, subMonths, startOfWeek } from "date-fns";
+import { Sparkline } from "@/components/sparkline";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
@@ -35,6 +36,17 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     db.candidate.groupBy({ by: ["stage"], where: { status: { in: ["IN_PROCESS", "DEPLOYED"] }, stage: { not: null } }, _count: true }),
     db.payment.findMany({ where: scope, orderBy: { createdAt: "desc" }, take: 8, include: { candidate: { select: { id: true, fullName: true } }, receivedBy: { select: { name: true } } } }),
   ]);
+  // 14-day trends for the figure tiles
+  const since = subDays(r.todayStart, 13);
+  const [payDays, leadDays] = await Promise.all([
+    db.payment.findMany({ where: { date: { gte: since }, ...scope }, select: { date: true, amount: true } }),
+    db.candidate.findMany({ where: { createdAt: { gte: since }, ...(boss ? {} : { assignedToId: user.id }) }, select: { createdAt: true } }),
+  ]);
+  const days14 = Array.from({ length: 14 }, (_, i) => addDays(since, i));
+  const dayKey = (x: Date) => format(x, "yyyy-MM-dd");
+  const payTrend = days14.map((day) => payDays.filter((p) => dayKey(p.date) === dayKey(day)).reduce((s2, p) => s2 + p.amount, 0));
+  const leadTrend = days14.map((day) => leadDays.filter((c) => dayKey(c.createdAt) === dayKey(day)).length);
+  const dayLabels = days14.map((x) => format(x, "EEE d MMM"));
   const overdueList = await getDueInstallments({ until: r.todayStart, assignedToId: boss ? undefined : user.id });
   const overdue = overdueList.reduce((s, x) => s + x.outstanding, 0);
   const todayTotal = payToday.reduce((s, p) => s + (p._sum.amount ?? 0), 0);
@@ -79,10 +91,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       {sp.denied && <div className="mb-4"><Notice tone="red">Your role does not have access to that page.</Notice></div>}
 
       <Figures cols={6}>
-        <Figure label="Collected today" value={money(todayTotal, { cur: false })} sub={`cash ${money(cash, { cur: false, whole: true })} · bank ${money(todayTotal - cash, { cur: false, whole: true })}`} tone="green" href={can(user.role, "finance.view") ? "/finance/collections" : undefined} />
+        <Figure label="Collected today" value={money(todayTotal, { cur: false })} sub={`cash ${money(cash, { cur: false, whole: true })} · bank ${money(todayTotal - cash, { cur: false, whole: true })}`} tone="green" href={can(user.role, "finance.view") ? "/finance/collections" : undefined}
+          chart={<Sparkline values={payTrend} labels={dayLabels} format={(n) => money(n, { whole: true })} />} />
         <Figure label={d(r.now, "MMMM")} value={money(month, { cur: false, whole: true })} sub={last ? `${month >= last ? "+" : ""}${pct(month - last, last)}% vs same day last month` : "collected"} />
         <Figure label="Overdue fees" value={money(overdue, { cur: false, whole: true })} sub={`${overdueList.length} installments`} tone={overdue ? "red" : undefined} href="/finance" />
-        <Figure label="New leads" value={newLeads} sub="this week" href="/candidates?status=LEAD" />
+        <Figure label="New leads" value={newLeads} sub="this week" href="/candidates?status=LEAD"
+          chart={<Sparkline values={leadTrend} labels={dayLabels} format={(n) => `${n} leads`} tone="ink" />} />
         <Figure label="In visa process" value={inProcess} href="/visa" />
         <Figure label="Arrived" value={deployedMonth} sub="this month" tone="green" />
       </Figures>

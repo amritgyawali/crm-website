@@ -1,6 +1,6 @@
 // Paired monthly bars (e.g. income vs costs). Colours validated for colour-blind separation.
-const A = "#1f7a55";
-const B = "#c4793a";
+const A = "var(--color-chart-a)";
+const B = "var(--color-chart-b)";
 const fmt = (n: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 
 export function MonthBars({ data, aLabel, bLabel, height = 180, showNet = true }: { data: { label: string; a: number; b: number }[]; aLabel: string; bLabel: string; height?: number; showNet?: boolean }) {

@@ -72,7 +72,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {present.map((t) => (
-          <Link key={t.key} href={toggle(t.key)} className={cx("inline-flex items-center gap-1.5 h-7 px-2.5 border rounded-[3px] text-[12.5px] no-underline", hidden.has(t.key) ? "border-rule text-muted line-through bg-transparent" : "border-rule-2 bg-white")}>
+          <Link key={t.key} href={toggle(t.key)} className={cx("inline-flex items-center gap-1.5 h-7 px-2.5 border rounded-[3px] text-[12.5px] no-underline", hidden.has(t.key) ? "border-rule text-muted line-through bg-transparent" : "border-rule-2 bg-field")}>
             <span className="w-2.5 h-2.5 rounded-[2px]" style={{ background: t.color, opacity: hidden.has(t.key) ? 0.35 : 1 }} />
             {t.label}<span className="num text-muted">{counts[t.key]}</span>
           </Link>

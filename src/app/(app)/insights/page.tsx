@@ -49,7 +49,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
         actions={
           <div className="flex border border-rule-2 rounded-[3px] overflow-hidden text-[13px]">
             {PERIODS.map((p) => (
-              <Link key={p} href={`/insights?days=${p}`} className={cx("px-3 h-[34px] inline-flex items-center no-underline border-r border-rule-2 last:border-r-0", p === days ? "bg-ink text-paper" : "bg-white hover:bg-well")}>
+              <Link key={p} href={`/insights?days=${p}`} className={cx("px-3 h-[34px] inline-flex items-center no-underline border-r border-rule-2 last:border-r-0", p === days ? "bg-ink text-paper" : "bg-field hover:bg-well")}>
                 {p === 365 ? "1 year" : `${p} days`}
               </Link>
             ))}

@@ -6,6 +6,7 @@ import { PARTNER_TYPE_LABEL } from "@/lib/constants";
 import { d, money } from "@/lib/format";
 import { Bar, Empty, LinkButton, Money, PageHeader, Section, TableWrap, Tag, cx } from "@/components/ui";
 import { partnerTotals } from "./data";
+import { RowNav } from "@/components/row-nav";
 
 export const metadata = { title: "Partners" };
 
@@ -53,7 +54,7 @@ export default async function PartnersPage() {
 
       <Section flush>
         {rows.length === 0 ? <Empty>No partners yet.</Empty> : (
-          <TableWrap>
+          <RowNav><TableWrap>
             <table className="grid-table">
               <thead>
                 <tr>
@@ -81,7 +82,7 @@ export default async function PartnersPage() {
                 })}
               </tbody>
             </table>
-          </TableWrap>
+          </TableWrap></RowNav>
         )}
       </Section>
     </>

@@ -7,6 +7,7 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "@fontsource-variable/source-serif-4/index.css";
 import "./globals.css";
+import { cookies } from "next/headers";
 import { getSettings } from "@/lib/settings";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,11 +19,19 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const viewport: Viewport = { themeColor: "#1b1a17", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f2ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#151412" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+};
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const theme = (await cookies()).get("theme")?.value;
   return (
-    <html lang="en">
+    <html lang="en" data-theme={theme === "dark" || theme === "light" ? theme : undefined} suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

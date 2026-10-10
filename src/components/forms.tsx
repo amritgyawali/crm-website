@@ -1,16 +1,23 @@
 "use client";
 
-import { createContext, useContext, useState, useTransition, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionState } from "@/lib/action";
+import { toast } from "@/lib/toast";
 import { btn, cx } from "./ui";
 
 const PendingCtx = createContext(false);
 
+/**
+ * Form that calls a server action. Success shows a toast (or an inline note for long reports),
+ * errors show under the form. With `guard`, leaving the page with unsaved typing asks first.
+ */
 export function ActionForm({
-  action, children, className, reset = true, onDone, showMessage = true, id,
+  action, children, className, reset = true, onDone, showMessage = true, id, inlineSuccess = false, guard = false,
 }: {
   id?: string;
+  inlineSuccess?: boolean;
+  guard?: boolean;
   action: (fd: FormData) => Promise<ActionState>;
   children: ReactNode;
   className?: string;
@@ -21,10 +28,20 @@ export function ActionForm({
   const [state, setState] = useState<ActionState>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
+  const dirty = useRef(false);
+  useEffect(() => {
+    if (!guard) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      if (dirty.current) e.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [guard]);
   return (
     <form
       id={id}
       className={className}
+      onInput={() => (dirty.current = true)}
       onSubmit={(e) => {
         e.preventDefault();
         const form = e.currentTarget;
@@ -33,8 +50,10 @@ export function ActionForm({
         const fd = new FormData(form, submitter);
         start(async () => {
           const r = await action(fd);
-          setState(r);
+          setState(r?.ok && !inlineSuccess ? null : r);
           if (r?.ok) {
+            dirty.current = false;
+            if (!inlineSuccess) toast(r.message ?? "Saved.");
             if (reset) form.reset();
             onDone?.(r);
             router.refresh();
@@ -101,7 +120,8 @@ export function ActionButton({
         } else if (confirm && !window.confirm(confirm)) return;
         start(async () => {
           const r = await action(input);
-          if (r?.error) window.alert(r.error);
+          if (r?.error) toast(r.error, "error");
+          else if (r?.message) toast(r.message);
           router.refresh();
         });
       }}

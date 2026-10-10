@@ -10,6 +10,7 @@ import { Empty, Input, Money, PageHeader, Section, Select, TableWrap, btn } from
 import { FilterForm } from "@/components/filter-form";
 import { Pager } from "@/components/pager";
 import { FinanceTabs } from "../tabs";
+import { RowNav } from "@/components/row-nav";
 
 export const metadata = { title: "All payments" };
 const PER = 100;
@@ -50,7 +51,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
       </FilterForm>
       <Section flush>
         {rows.length === 0 ? <Empty>No payments in this period.</Empty> : (
-          <TableWrap>
+          <RowNav><TableWrap>
             <table className="grid-table">
               <thead><tr><th>Date</th><th>Receipt</th><th>Candidate</th><th>Method</th><th>Reference</th><th>Received by</th><th className="r">Amount</th></tr></thead>
               <tbody>
@@ -67,7 +68,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
                 ))}
               </tbody>
             </table>
-          </TableWrap>
+          </TableWrap></RowNav>
         )}
         <Pager page={page} pages={Math.ceil(agg._count / PER)} params={params} base="/finance/payments" />
       </Section>

@@ -36,7 +36,7 @@ export function PassportFill({ photoEnabled }: { photoEnabled: boolean }) {
   }
 
   return (
-    <div ref={box} className="border border-dashed border-rule-2 rounded-[3px] p-3 bg-white">
+    <div ref={box} className="border border-dashed border-rule-2 rounded-[3px] p-3 bg-field">
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
         <span className="text-[13px] font-medium">Fill from passport</span>
         <span className="text-[12px] text-muted">Name, passport no., dates, nationality and gender are filled for you to check.</span>

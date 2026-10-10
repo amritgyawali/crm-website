@@ -5,9 +5,8 @@ import { ActionForm, Submit } from "@/components/forms";
 import { Field, FormGrid, Input, Select, Textarea } from "@/components/ui";
 import type { ActionState } from "@/lib/action";
 import { REFUSABLE_STAGES, STAGES, type Stage } from "@/lib/constants";
-import { toDateInput } from "@/lib/dates";
 
-export function StageForm({ action, suggested, paid }: { action: (fd: FormData) => Promise<ActionState>; suggested: Stage; paid: number }) {
+export function StageForm({ action, suggested, paid, today }: { action: (fd: FormData) => Promise<ActionState>; suggested: Stage; paid: number; today: string }) {
   const [stage, setStage] = useState<Stage>(suggested);
   const [result, setResult] = useState<"DONE" | "REFUSED">("DONE");
   const refusable = REFUSABLE_STAGES.includes(stage);
@@ -24,7 +23,7 @@ export function StageForm({ action, suggested, paid }: { action: (fd: FormData) 
           </Field>
         )}
         <Field label="Date">
-          <Input name="date" type="date" defaultValue={toDateInput(new Date())} required />
+          <Input name="date" type="date" defaultValue={today} required />
         </Field>
       </FormGrid>
 

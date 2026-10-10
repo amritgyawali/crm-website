@@ -56,7 +56,15 @@ Forgot the admin password? `npm run create-admin -- --email you@company.com --pa
 
 ### Keyboard shortcuts
 
-`/` search candidates · `n` new candidate · `c` call list
+`Ctrl K` search everything · `/` search candidates · `n` new candidate · `c` call list ·
+in lists `j` / `k` move, `Enter` open, `x` tick, `Esc` let go.
+
+### Look and feel
+
+Day and Night themes (or Auto, following the device), switched at the bottom of the sidebar and remembered per
+person. Confirmations appear as short notes in the corner; a thin bar at the top shows a page is loading. Long
+candidate records keep a slim bar at the top with the balance, Call / WhatsApp and section jumps. Lists can be
+saved as named views, and on phones the candidate list shows cards with filters folded away.
 
 ## Roles
 
