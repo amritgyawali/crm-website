@@ -8,7 +8,8 @@ import { getSettings, num } from "@/lib/settings";
 import { d, money, relDays } from "@/lib/format";
 import { subDays } from "date-fns";
 import { Bar, Disclose, Empty, LinkButton, PageHeader, Section, Tabs, Tag, cx } from "@/components/ui";
-import { ContactButtons } from "@/components/contact";
+import { ContactButtons, RemindButton } from "@/components/contact";
+import { reminderWriter } from "@/lib/reminder";
 import { FilterForm } from "@/components/filter-form";
 import { OutcomeTag, StatusTag } from "@/components/tags";
 import { CallLogger } from "../candidates/[id]/call-logger";
@@ -16,7 +17,7 @@ import { logCall } from "../candidates/actions";
 
 export const metadata = { title: "Call list" };
 
-type Row = { id: string; name: string; phone: string; whatsapp: string | null; status?: string; context: React.ReactNode; tone?: "red" | "amber"; lastOutcome?: string | null };
+type Row = { remind?: string; id: string; name: string; phone: string; whatsapp: string | null; status?: string; context: React.ReactNode; tone?: "red" | "amber"; lastOutcome?: string | null };
 
 function CallRows({ rows, empty }: { rows: Row[]; empty: string }) {
   if (!rows.length) return <Empty>{empty}</Empty>;
@@ -33,7 +34,7 @@ function CallRows({ rows, empty }: { rows: Row[]; empty: string }) {
               </div>
               <div className={cx("text-[13px] mt-0.5", r.tone === "red" ? "text-danger" : r.tone === "amber" ? "text-warn" : "text-muted")}>{r.context}</div>
             </div>
-            <ContactButtons phone={r.phone} whatsapp={r.whatsapp} />
+            <span className="inline-flex gap-1.5">{r.remind && <RemindButton phone={r.whatsapp || r.phone} text={r.remind} />}<ContactButtons phone={r.phone} whatsapp={r.whatsapp} /></span>
           </div>
           <Disclose label="Log result" className="mt-2">
             <div className="pt-2"><CallLogger action={logCall.bind(null, r.id)} compact /></div>
@@ -84,7 +85,9 @@ export default async function CallsPage({ searchParams }: { searchParams: Promis
     context: <>Call back {c.nextCallAt! < r.todayStart ? `was due ${relDays(c.nextCallAt)}` : `today ${c.nextCallAt!.getHours() ? `at ${d(c.nextCallAt, "HH:mm")}` : ""}`}{c.callLogs[0]?.note ? ` · “${c.callLogs[0].note}”` : ""}</>,
     tone: c.nextCallAt! < r.todayStart ? "red" : undefined,
   }));
+  const write = await reminderWriter(who.name);
   const payRows: Row[] = dues.map((x) => ({
+    remind: write(x),
     id: x.candidateId, name: x.name, phone: x.phone, whatsapp: x.whatsapp,
     context: <>{x.label}: {money(x.outstanding)} {x.dueDate < r.todayStart ? `overdue since ${d(x.dueDate, "d MMM")}` : "due today"}</>,
     tone: x.dueDate < r.todayStart ? "red" : "amber",

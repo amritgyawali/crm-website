@@ -9,13 +9,14 @@ import { computeLedger } from "@/lib/ledger";
 import { PAYING_STATUSES } from "@/lib/constants";
 import { d, money, relDays } from "@/lib/format";
 import { Empty, Figure, Figures, Money, PageHeader, Section, TableWrap, cx } from "@/components/ui";
-import { ContactButtons } from "@/components/contact";
+import { ContactButtons, RemindButton } from "@/components/contact";
+import { reminderWriter } from "@/lib/reminder";
 import { FilterForm } from "@/components/filter-form";
 import { FinanceTabs } from "./tabs";
 
 export const metadata = { title: "Fees & collections" };
 
-function DueTable({ rows, today }: { rows: DueItem[]; today: Date }) {
+function DueTable({ rows, today, write }: { rows: DueItem[]; today: Date; write: (x: DueItem) => string }) {
   if (!rows.length) return <Empty>Nothing here.</Empty>;
   return (
     <TableWrap>
@@ -30,7 +31,7 @@ function DueTable({ rows, today }: { rows: DueItem[]; today: Date }) {
               <td className="text-[13px]">{x.assignedTo ?? "—"}</td>
               <td className="r font-medium"><Money v={x.outstanding} /></td>
               <td className="r text-muted"><Money v={x.balance} /></td>
-              <td className="text-right"><ContactButtons phone={x.phone} whatsapp={x.whatsapp} /></td>
+              <td className="text-right whitespace-nowrap"><span className="inline-flex gap-1.5"><RemindButton phone={x.whatsapp || x.phone} text={write(x)} /><ContactButtons phone={x.phone} whatsapp={x.whatsapp} /></span></td>
             </tr>
           ))}
         </tbody>
@@ -58,6 +59,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     }),
     all ? db.user.findMany({ where: { active: true, role: { in: ["SALES", "MANAGEMENT", "OPERATIONS"] } }, orderBy: { name: "asc" } }) : Promise.resolve([]),
   ]);
+  const write = await reminderWriter(user.name);
   const outstanding = openCands.reduce((s, c) => s + computeLedger(c).balance, 0);
   const overdue = dues.filter((x) => x.dueDate < r.todayStart);
   const today = dues.filter((x) => x.dueDate >= r.todayStart && x.dueDate <= r.todayEnd);
@@ -83,9 +85,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <Figure label="Total still owed" value={money(outstanding, { cur: false, whole: true })} sub={`${openCands.length} open ledgers`} />
       </Figures>
       <div className="space-y-5 mt-5">
-        <Section title="Overdue" note="oldest first" flush><DueTable rows={overdue} today={r.todayStart} /></Section>
-        <Section title="Due today" flush><DueTable rows={today} today={r.todayStart} /></Section>
-        <Section title="Due later this week" note={`until ${d(r.weekEnd, "EEE d MMM")}`} flush><DueTable rows={week} today={r.todayStart} /></Section>
+        <Section title="Overdue" note="oldest first" flush><DueTable rows={overdue} today={r.todayStart} write={write} /></Section>
+        <Section title="Due today" flush><DueTable rows={today} today={r.todayStart} write={write} /></Section>
+        <Section title="Due later this week" note={`until ${d(r.weekEnd, "EEE d MMM")}`} flush><DueTable rows={week} today={r.todayStart} write={write} /></Section>
       </div>
     </>
   );

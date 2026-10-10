@@ -12,7 +12,9 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma db push --force-reset && prisma db seed",
     "backup": "tsx scripts/backup.ts",
-    "setup": "prisma db push && prisma db seed"
+    "setup": "prisma db push && prisma db seed",
+    "create-admin": "tsx scripts/create-admin.ts",
+    "setup:empty": "prisma db push && tsx scripts/create-admin.ts"
   },
   "dependencies": {
     "@fontsource-variable/source-serif-4": "^5.3.0",

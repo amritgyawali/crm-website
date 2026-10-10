@@ -106,6 +106,20 @@ export async function assignCandidate(id: string, fd: FormData) {
   });
 }
 
+export async function bulkAssign(fd: FormData) {
+  return run(async () => {
+    const user = await requirePerm("candidate.assign");
+    const ids = fd.getAll("ids").map(String).filter(Boolean);
+    if (!ids.length) throw new Error("Tick at least one candidate.");
+    const to = optStr(fd, "assignTo");
+    if (!to) throw new Error("Choose who to assign them to.");
+    const staff = await db.user.findUniqueOrThrow({ where: { id: to } });
+    const r = await db.candidate.updateMany({ where: { id: { in: ids } }, data: { assignedToId: to } });
+    await audit({ userId: user.id, action: "UPDATE", entity: "Candidate", summary: `Assigned ${r.count} candidates to ${staff.name}` });
+    return `${r.count} candidate${r.count === 1 ? "" : "s"} assigned to ${staff.name}.`;
+  });
+}
+
 export async function deleteCandidate(id: string) {
   const res = await run(async () => {
     const user = await requirePerm("candidate.delete");
