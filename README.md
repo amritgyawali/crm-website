@@ -1,0 +1,90 @@
+# Recruitment Office CRM
+
+Internal system for a recruitment agency that collects fees from candidates, works with overseas
+partner agencies, and follows each candidate from first call to arrival in the destination country.
+
+Everything hangs off two records — the **candidate** and the **job order** — so one candidate screen
+shows their calls, fee ledger, payments, refunds, documents and visa progress together.
+
+## What is in it
+
+| Area | Highlights |
+|---|---|
+| **Candidate fees** | Fee packages per job order / country, installment plans (by date or linked to a stage, e.g. "after visa approval"), payments with automatic receipt numbers, printable receipt, WhatsApp share with a private receipt link, balance and next due date, refunds with management approval. Only Finance/Management can edit or delete a payment; every change is logged with a reason. Fee limits per origin and destination country are enforced. |
+| **Payment follow-up** | Due today / this week / overdue lists, reminders before due dates for the assigned staff member, follow-up outcomes (promised / paid / no answer) logged from the call box. Daily cash and bank collection sheet to match with the bank. |
+| **Partners** | Profile, contacts, partner type, agreements with expiry and reminder, agreed terms, job orders received, candidates supplied / submitted, selected and deployed counts, money owed both ways, communication notes and next follow-up, ranking by deployments and income. |
+| **Visa & deployment** | Nine stages with date, staff member and note (appointment date & place, flight details, refusal reason). Stage time limits with alerts, passport expiry alerts (12 months or before contract end), refusal or withdrawal closes the case and opens a refund record. Overview per stage, job order and country. |
+| **Call logging** | One-tap Call / WhatsApp, outcome buttons, next-call date picked automatically — two taps to log. Daily call list per staff member (new leads, call-backs, payment follow-ups), alert for leads not contacted in N days, daily and monthly counts. |
+| **Campaigns** | Campaign records with spend; compulsory lead source on every candidate; report of leads, enrolled (paid first installment), deployed, cost per enrolment and money collected. `/api/leads` endpoint for Facebook/Instagram lead forms. |
+| **Office expenses** | Recurring bills (rent, DEWA, internet, phones, software, licences) — paying one creates the next. One-time expenses with photo/PDF receipt and approval. Bills due in 7 / 30 days and overdue. Monthly income minus costs. |
+| **Office** | Attendance with self check-in, payroll calculated from attendance and approved before payment, monthly targets with live progress, staff performance record, management dashboard, reminders page, WhatsApp templates, role-based logins, activity log, Excel/CSV exports, printable PDFs, daily backup. |
+
+## Run it locally
+
+Requires Node.js 20+.
+
+```bash
+npm install
+cp .env.example .env      # then set SESSION_SECRET to a long random string
+npm run setup             # creates the database and loads demo data
+npm run dev               # http://localhost:3000
+```
+
+Demo logins (password `office123` for all):
+
+| Email | Role |
+|---|---|
+| admin@office.test | Admin |
+| manager@office.test | Management |
+| finance@office.test | Finance |
+| ops@office.test | Operations (visa & documents) |
+| sunita@office.test, imran@office.test, grace@office.test | Sales |
+
+To start with an empty system instead, run `npx prisma db push` and create the first admin with
+`npm run db:seed` then delete the demo records — or keep only the users and change their passwords
+under **Settings → Users & roles**. Change the company name and receipt details under **Settings**.
+
+## Roles
+
+- **Admin / Management** — everything; approve refunds, expenses and payroll; manage users.
+- **Finance** — fee plans, payments (including edits and deletes), refund payouts, expenses, payroll, reports.
+- **Sales** — their own candidates and call list, record payments, see campaigns.
+- **Operations** — visa stages, documents, job orders, partners.
+
+## Production
+
+```bash
+npm run build
+npm start
+```
+
+- Set `SESSION_SECRET`, `DATABASE_URL` and `LEADS_API_KEY` in the environment.
+- Uploaded files are stored in `./uploads` and served only to signed-in staff — keep this folder on persistent disk.
+- SQLite suits a single office server. For hosted/multi-server setups change `provider` in
+  `prisma/schema.prisma` to `postgresql` and point `DATABASE_URL` at the database.
+- Set the server time zone to the office's (e.g. `TZ=Asia/Dubai`) so "today" lists match the office day.
+
+### Daily backup
+
+```bash
+# crontab -e
+30 23 * * * cd /srv/crm && npm run backup
+```
+
+Keeps the latest 30 copies in `./backups`. Management can also download a copy from **Settings**.
+
+### Lead forms (Facebook / Instagram)
+
+Send leads from Zapier, Make or a Meta webhook relay:
+
+```
+POST /api/leads
+x-api-key: <LEADS_API_KEY>
+{ "name": "…", "phone": "+971…", "nationality": "Nepal", "adId": "<id saved on the campaign>" }
+```
+
+The lead is created as a new candidate with the matching campaign as its source. Duplicates (same phone) are ignored.
+
+## Tech
+
+Next.js 15 (App Router, server actions) · React 19 · TypeScript · Tailwind CSS 4 · Prisma 6 · SQLite · ExcelJS.

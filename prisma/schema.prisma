@@ -1,0 +1,500 @@
+// Recruitment office CRM
+// SQLite for local/single-office use. Switch provider to "postgresql" for a hosted setup.
+// String "enum" values are listed in src/lib/constants.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- staff
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String // ADMIN | MANAGEMENT | FINANCE | SALES | OPERATIONS
+  phone         String?
+  active        Boolean  @default(true)
+  monthlySalary Float    @default(0)
+  joinedOn      DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  assignedCandidates Candidate[]       @relation("AssignedCandidates")
+  callLogs           CallLog[]
+  paymentsReceived   Payment[]         @relation("PaymentReceivedBy")
+  stageEvents        StageEvent[]
+  attendance         Attendance[]
+  payrolls           Payroll[]         @relation("PayrollUser")
+  payrollsApproved   Payroll[]         @relation("PayrollApprover")
+  targets            Target[]
+  auditLogs          AuditLog[]
+  refundsRequested   Refund[]          @relation("RefundRequestedBy")
+  refundsApproved    Refund[]          @relation("RefundApprovedBy")
+  expensesCreated    Expense[]         @relation("ExpenseCreatedBy")
+  expensesApproved   Expense[]         @relation("ExpenseApprovedBy")
+  partnerNotes       PartnerNote[]
+  documents          Document[]
+}
+
+// ---------------------------------------------------------------- partners
+
+model Partner {
+  id                  String    @id @default(cuid())
+  name                String
+  country             String
+  type                String // JOB_ORDERS | CANDIDATES | BOTH
+  phone               String?
+  whatsapp            String?
+  email               String?
+  address             String?
+  website             String?
+  serviceFeePerWorker Float     @default(0)
+  feeCurrency         String    @default("AED")
+  commission          String? // e.g. "10% of first salary" or "AED 500 per deployed worker"
+  paymentTerms        String?
+  status              String    @default("ACTIVE") // ACTIVE | ON_HOLD | ENDED
+  nextFollowUp        DateTime?
+  notes               String?
+  createdAt           DateTime  @default(now())
+
+  contacts   PartnerContact[]
+  agreements PartnerAgreement[]
+  partnerNotes PartnerNote[]
+  entries    PartnerEntry[]
+  jobOrders  JobOrder[]
+  candidates Candidate[]       @relation("SourcePartner")
+}
+
+model PartnerContact {
+  id        String  @id @default(cuid())
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  name      String
+  position  String?
+  phone     String?
+  whatsapp  String?
+  email     String?
+}
+
+model PartnerAgreement {
+  id        String    @id @default(cuid())
+  partnerId String
+  partner   Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  title     String
+  signedOn  DateTime?
+  expiresOn DateTime?
+  remindDays Int      @default(30)
+  fileUrl   String?
+  fileName  String?
+  note      String?
+  createdAt DateTime  @default(now())
+}
+
+model PartnerNote {
+  id           String    @id @default(cuid())
+  partnerId    String
+  partner      Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  channel      String    @default("CALL") // CALL | WHATSAPP | EMAIL | MEETING
+  body         String
+  nextFollowUp DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+// Money with partners, both ways.
+// direction RECEIVABLE = partner owes us, PAYABLE = we owe partner.
+// kind CHARGE adds to what is owed, PAYMENT settles it.
+model PartnerEntry {
+  id          String    @id @default(cuid())
+  partnerId   String
+  partner     Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  direction   String
+  kind        String
+  amount      Float
+  date        DateTime
+  dueDate     DateTime?
+  reference   String?
+  description String
+  method      String?
+  jobOrderId  String?
+  jobOrder    JobOrder? @relation(fields: [jobOrderId], references: [id])
+  createdById String?
+  createdAt   DateTime  @default(now())
+}
+
+// ---------------------------------------------------------------- job orders
+
+model JobOrder {
+  id             String    @id @default(cuid())
+  reference      String    @unique // partner RRF / demand letter number
+  position       String
+  employer       String
+  partnerId      String?
+  partner        Partner?  @relation(fields: [partnerId], references: [id])
+  country        String
+  city           String?
+  vacancies      Int       @default(1)
+  salary         String?
+  contractMonths Int       @default(24)
+  status         String    @default("OPEN") // OPEN | ON_HOLD | FILLED | CLOSED
+  receivedOn     DateTime  @default(now())
+  deadline       DateTime?
+  requirements   String?
+  createdAt      DateTime  @default(now())
+
+  candidates  Candidate[]
+  feePackages FeePackage[]
+  campaigns   Campaign[]
+  partnerEntries PartnerEntry[]
+}
+
+// ---------------------------------------------------------------- fees
+
+model FeePackage {
+  id          String     @id @default(cuid())
+  name        String
+  jobOrderId  String?
+  jobOrder    JobOrder?  @relation(fields: [jobOrderId], references: [id])
+  country     String? // destination country when not tied to one job order
+  totalAmount Float
+  currency    String     @default("AED")
+  refundPolicy String?
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+
+  steps      FeePackageStep[]
+  candidates Candidate[]
+}
+
+model FeePackageStep {
+  id        String     @id @default(cuid())
+  packageId String
+  package   FeePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  sequence  Int
+  label     String
+  amount    Float
+  dueAfterDays Int?    // days after enrolment, when not stage-linked
+  stage     String?    // due when the candidate reaches this stage
+}
+
+// Recruitment fee caps per country (origin or destination).
+model FeeRule {
+  id        String  @id @default(cuid())
+  country   String
+  side      String // ORIGIN | DESTINATION
+  maxAmount Float
+  currency  String  @default("AED")
+  note      String?
+}
+
+// ---------------------------------------------------------------- campaigns
+
+model Campaign {
+  id          String    @id @default(cuid())
+  name        String
+  platform    String // FACEBOOK | INSTAGRAM | TIKTOK | OTHER
+  jobOrderId  String?
+  jobOrder    JobOrder? @relation(fields: [jobOrderId], references: [id])
+  startDate   DateTime
+  endDate     DateTime?
+  amountSpent Float     @default(0)
+  externalId  String?   // lead form / ad id for automatic import
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  candidates Candidate[]
+}
+
+// ---------------------------------------------------------------- candidates
+
+model Candidate {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  fullName        String
+  phone           String
+  whatsapp        String?
+  email           String?
+  gender          String?
+  dateOfBirth     DateTime?
+  nationality     String
+  currentLocation String?
+  trade           String?
+  experienceYears Int?
+  passportNo      String?
+  passportExpiry  DateTime?
+
+  status         String    @default("LEAD") // see CANDIDATE_STATUS
+  leadSource     String // CAMPAIGN | WALK_IN | REFERRAL | PARTNER | OTHER
+  campaignId     String?
+  campaign       Campaign? @relation(fields: [campaignId], references: [id])
+  sourcePartnerId String?
+  sourcePartner  Partner?  @relation("SourcePartner", fields: [sourcePartnerId], references: [id])
+  referredBy     String?
+  sourceNote     String?
+
+  jobOrderId   String?
+  jobOrder     JobOrder?   @relation(fields: [jobOrderId], references: [id])
+  assignedToId String?
+  assignedTo   User?       @relation("AssignedCandidates", fields: [assignedToId], references: [id])
+
+  feePackageId String?
+  feePackage   FeePackage? @relation(fields: [feePackageId], references: [id])
+  agreedAmount Float       @default(0)
+  enrolledOn   DateTime?
+
+  stage          String?   // current visa/deployment stage
+  stageEnteredAt DateTime?
+  closedAt       DateTime?
+  closedReason   String?
+
+  lastContactedAt DateTime?
+  nextCallAt      DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  installments Installment[]
+  payments     Payment[]
+  refunds      Refund[]
+  callLogs     CallLog[]
+  stageEvents  StageEvent[]
+  documents    Document[]
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([stage])
+}
+
+model Installment {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  sequence    Int
+  label       String
+  amount      Float
+  dueDate     DateTime?
+  stage       String?   // e.g. VISA_APPROVED: due once that stage is reached
+  createdAt   DateTime  @default(now())
+}
+
+model Payment {
+  id           String    @id @default(cuid())
+  receiptNo    String    @unique
+  shareToken   String    @unique
+  candidateId  String
+  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  date         DateTime
+  amount       Float
+  method       String // CASH | BANK_TRANSFER | CARD | CHEQUE | OTHER
+  reference    String?
+  note         String?
+  receivedById String
+  receivedBy   User      @relation("PaymentReceivedBy", fields: [receivedById], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([date])
+}
+
+model Refund {
+  id            String    @id @default(cuid())
+  candidateId   String
+  candidate     Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  reason        String // WITHDRAWN | WP_REFUSED | VISA_REFUSED | NOT_ELIGIBLE | OTHER
+  stageAtClose  String?
+  paidToDate    Float
+  policyAmount  Float
+  note          String?
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED | PAID
+  requestedById String
+  requestedBy   User      @relation("RefundRequestedBy", fields: [requestedById], references: [id])
+  approvedById  String?
+  approvedBy    User?     @relation("RefundApprovedBy", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  approvalNote  String?
+  refundedOn    DateTime?
+  refundMethod  String?
+  refundRef     String?
+  createdAt     DateTime  @default(now())
+}
+
+model CallLog {
+  id           String    @id @default(cuid())
+  candidateId  String
+  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  outcome      String // see CALL_OUTCOMES
+  channel      String    @default("PHONE") // PHONE | WHATSAPP
+  note         String?
+  nextCallAt   DateTime?
+  promisedDate DateTime?
+  promisedAmount Float?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model StageEvent {
+  id            String    @id @default(cuid())
+  candidateId   String
+  candidate     Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  stage         String
+  result        String    @default("DONE") // DONE | REFUSED
+  date          DateTime
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  note          String?
+  appointmentAt DateTime?
+  location      String?
+  flightDetails String?
+  refusalReason String?
+  createdAt     DateTime  @default(now())
+}
+
+model Document {
+  id           String    @id @default(cuid())
+  candidateId  String
+  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  kind         String // PASSPORT | PHOTO | CV | CERTIFICATE | MEDICAL | POLICE | WORK_PERMIT | VISA | TICKET | CONTRACT | OTHER
+  title        String
+  fileUrl      String
+  fileName     String
+  expiresOn    DateTime?
+  uploadedById String
+  uploadedBy   User      @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime  @default(now())
+}
+
+// ---------------------------------------------------------------- office costs
+
+model Bill {
+  id         String    @id @default(cuid())
+  name       String
+  category   String // RENT | DEWA | INTERNET | PHONE | SOFTWARE | LICENCE | OTHER
+  vendor     String?
+  amount     Float
+  dueDate    DateTime
+  frequency  String // MONTHLY | QUARTERLY | HALF_YEARLY | YEARLY | ONCE
+  remindDays Int       @default(5)
+  status     String    @default("UNPAID") // UNPAID | PAID
+  paidOn     DateTime?
+  paidMethod String?
+  paidRef    String?
+  seriesId   String    // all bills in a repeating series share this id
+  createdAt  DateTime  @default(now())
+
+  @@index([dueDate])
+}
+
+model Expense {
+  id           String    @id @default(cuid())
+  date         DateTime
+  category     String // OFFICE_SUPPLIES | MARKETING | TRAVEL | VISA_GOV | OTHER
+  amount       Float
+  paidBy       String
+  method       String    @default("CASH")
+  note         String?
+  fileUrl      String?
+  fileName     String?
+  campaignId   String?
+  status       String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdById  String
+  createdBy    User      @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+  approvedById String?
+  approvedBy   User?     @relation("ExpenseApprovedBy", fields: [approvedById], references: [id])
+  approvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([date])
+}
+
+// ---------------------------------------------------------------- HR
+
+model Attendance {
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date     DateTime // midnight of the day
+  status   String // PRESENT | LATE | HALF_DAY | ABSENT | LEAVE | HOLIDAY
+  checkIn  String?
+  checkOut String?
+  note     String?
+
+  @@unique([userId, date])
+}
+
+model Payroll {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation("PayrollUser", fields: [userId], references: [id], onDelete: Cascade)
+  month        String // YYYY-MM
+  baseSalary   Float
+  workingDays  Int
+  paidDays     Float
+  deductions   Float     @default(0)
+  additions    Float     @default(0)
+  netPay       Float
+  note         String?
+  status       String    @default("DRAFT") // DRAFT | APPROVED | PAID
+  approvedById String?
+  approvedBy   User?     @relation("PayrollApprover", fields: [approvedById], references: [id])
+  approvedAt   DateTime?
+  paidOn       DateTime?
+
+  @@unique([userId, month])
+}
+
+model Target {
+  id         String @id @default(cuid())
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month      String // YYYY-MM
+  calls      Int    @default(0)
+  enrolments Int    @default(0)
+  collection Float  @default(0)
+
+  @@unique([userId, month])
+}
+
+// ---------------------------------------------------------------- system
+
+model MessageTemplate {
+  id       String @id @default(cuid())
+  name     String
+  audience String // CANDIDATE | PARTNER
+  body     String
+}
+
+model StageSetting {
+  stage   String @id
+  maxDays Int
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String // CREATE | UPDATE | DELETE | APPROVE | LOGIN ...
+  entity    String
+  entityId  String?
+  summary   String
+  before    String?
+  after     String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

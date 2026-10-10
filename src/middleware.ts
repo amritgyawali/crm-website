@@ -1,0 +1,22 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { readSession, SESSION_COOKIE } from "@/lib/session";
+
+const PUBLIC = [/^\/login/, /^\/r\//, /^\/api\/leads/];
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  if (PUBLIC.some((re) => re.test(pathname))) return NextResponse.next();
+  const session = await readSession(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!session) {
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + req.nextUrl.search)}`;
+    return NextResponse.redirect(url);
+  }
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|svg|woff2?|ico)$).*)"],
+};

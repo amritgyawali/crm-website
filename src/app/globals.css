@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+/*
+  Look: an office ledger. Warm paper, black ink, hairline rules,
+  one green for actions, red only for money that is late.
+*/
+@theme {
+  --color-paper: #f4f2ec;
+  --color-sheet: #fdfcf9;
+  --color-ink: #1b1a17;
+  --color-ink-2: #45423c;
+  --color-muted: #78736a;
+  --color-rule: #e0dbd0;
+  --color-rule-2: #c8c1b2;
+  --color-well: #ece9e1;
+
+  --color-accent: #1f4e3d;
+  --color-accent-2: #163a2d;
+  --color-accent-tint: #e2ebe4;
+
+  --color-danger: #a3321f;
+  --color-danger-tint: #f5e2dc;
+  --color-warn: #8f5600;
+  --color-warn-tint: #f5e9cf;
+  --color-info: #2d4b66;
+  --color-info-tint: #e1e8ef;
+  --color-mark: #fbefb4;
+
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-serif: "Source Serif 4 Variable", "Source Serif 4", Georgia, serif;
+
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.45;
+    font-feature-settings: "ss02";
+  }
+  ::selection {
+    background: var(--color-mark);
+  }
+  a {
+    color: inherit;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+  table {
+    border-collapse: collapse;
+  }
+}
+
+@layer components {
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .label-caps {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    font-weight: 500;
+  }
+
+  /* form controls */
+  .control {
+    display: block;
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--color-rule-2);
+    border-radius: var(--radius-sm);
+    padding: 6px 9px;
+    min-height: 34px;
+    color: var(--color-ink);
+  }
+  .control:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+  }
+  .control::placeholder {
+    color: #a39d92;
+  }
+  select.control {
+    appearance: none;
+    padding-right: 26px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2345423c' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+  }
+  textarea.control {
+    min-height: 64px;
+    resize: vertical;
+  }
+  input[type="file"].control {
+    padding: 4px;
+  }
+  input[type="checkbox"] {
+    accent-color: var(--color-accent);
+    width: 15px;
+    height: 15px;
+  }
+
+  /* data tables */
+  .grid-table {
+    width: 100%;
+    font-size: 13.5px;
+  }
+  .grid-table th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-rule-2);
+    white-space: nowrap;
+    background: var(--color-sheet);
+  }
+  .grid-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--color-rule);
+    vertical-align: top;
+  }
+  .grid-table tbody tr:hover td {
+    background: #f8f6f1;
+  }
+  .grid-table tfoot td {
+    border-top: 1px solid var(--color-ink);
+    border-bottom: 0;
+    font-weight: 600;
+  }
+  .grid-table td.num,
+  .grid-table td .num {
+    white-space: nowrap;
+  }
+  .grid-table .r {
+    text-align: right;
+  }
+  .row-link {
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .row-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .link {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+  .link:hover {
+    color: var(--color-accent-2);
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
