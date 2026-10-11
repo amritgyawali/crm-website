@@ -48,7 +48,8 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
   if (sp.q) {
     const q = sp.q.trim();
     and.push({ OR: [
-      { fullName: { contains: q } }, { phone: { contains: q.replace(/\s/g, "") } }, { passportNo: { contains: q } },
+      { fullName: { contains: q } }, { passportNo: { contains: q.toUpperCase() } },
+      ...(q.replace(/\D/g, "").length >= 4 ? [{ phone: { contains: q.replace(/\D/g, "").replace(/^0+/, "") } }] : []),
       { code: { contains: q.toUpperCase() } }, { email: { contains: q } },
     ] });
   }

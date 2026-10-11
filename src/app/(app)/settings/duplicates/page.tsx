@@ -30,7 +30,7 @@ export default async function DuplicatesPage() {
       <PageHeader title="Settings" />
       <SettingsTabs active="duplicates" />
       <p className="text-[13px] text-muted -mt-2 mb-4 max-w-[760px]">
-        Records that look like the same person. Merging keeps the record you pick and moves calls, payments, refunds, documents and messages onto it. A fee plan or visa history moves only if the kept record has none. The others are deleted; the merge is written to the activity log.
+        Records that look like the same person. Merging keeps the record you pick and moves calls, payments, refunds, documents and messages onto it. If the kept record has no fee plan or visa history, one is taken from a single other record (never combined). Missing details are filled in, keeping fields like passport number and expiry together. The others are deleted; the merge is written to the activity log.
       </p>
       {groups.length === 0 ? <Section><Empty>No likely duplicates found.</Empty></Section> : (
         <div className="space-y-4">

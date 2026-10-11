@@ -153,14 +153,14 @@ export async function collectionForecast(weeks = 8) {
 
 /** New leads and enrolments per month. */
 export async function monthlyIntake(months = 6) {
-  const out = [];
-  for (let i = months - 1; i >= 0; i--) {
-    const m = subMonths(new Date(), i);
-    const [leads, enrolled] = await Promise.all([
-      db.candidate.count({ where: { createdAt: { gte: startOfMonth(m), lte: endOfMonth(m) } } }),
-      db.candidate.count({ where: { enrolledOn: { gte: startOfMonth(m), lte: endOfMonth(m) } } }),
-    ]);
-    out.push({ label: format(m, "MMM"), a: leads, b: enrolled });
-  }
-  return out;
+  const list = Array.from({ length: months }, (_, i) => subMonths(new Date(), months - 1 - i));
+  return Promise.all(
+    list.map(async (m) => {
+      const [leads, enrolled] = await Promise.all([
+        db.candidate.count({ where: { createdAt: { gte: startOfMonth(m), lte: endOfMonth(m) } } }),
+        db.candidate.count({ where: { enrolledOn: { gte: startOfMonth(m), lte: endOfMonth(m) } } }),
+      ]);
+      return { label: format(m, "MMM"), a: leads, b: enrolled };
+    }),
+  );
 }

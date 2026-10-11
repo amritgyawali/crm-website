@@ -15,8 +15,16 @@ export async function mergeCandidates(groupKey: string, fd: FormData) {
     const keepId = str(fd, "keep");
     if (!ids.includes(keepId)) throw new Error("Choose which record to keep.");
     const others = ids.filter((i) => i !== keepId);
-    const keep = await db.candidate.findUniqueOrThrow({ where: { id: keepId }, include: { installments: true, stageEvents: true } });
-    const rest = await db.candidate.findMany({ where: { id: { in: others } }, include: { installments: true, stageEvents: true } });
+    const keep = await db.candidate.findUnique({ where: { id: keepId }, include: { installments: true, stageEvents: true } });
+    if (!keep) throw new Error("That record no longer exists. Reload the page.");
+    // most advanced record first, so its details win when filling gaps
+    const rest = (await db.candidate.findMany({ where: { id: { in: others } }, include: { installments: true, stageEvents: true } }))
+      .sort((a, b) => STATUS_RANK.indexOf(b.status) - STATUS_RANK.indexOf(a.status));
+    if (!rest.length) throw new Error("The other records were already merged or deleted. Reload the page.");
+
+    // a fee plan and a visa history each come from ONE record only
+    const planFrom = keep.installments.length ? null : rest.find((o) => o.installments.length) ?? null;
+    const visaFrom = keep.stageEvents.length ? null : rest.find((o) => o.stageEvents.length) ?? null;
 
     await db.$transaction(async (tx) => {
       for (const o of rest) {
@@ -25,29 +33,30 @@ export async function mergeCandidates(groupKey: string, fd: FormData) {
         await tx.refund.updateMany({ where: { candidateId: o.id }, data: { candidateId: keepId } });
         await tx.document.updateMany({ where: { candidateId: o.id }, data: { candidateId: keepId } });
         await tx.messageLog.updateMany({ where: { candidateId: o.id }, data: { candidateId: keepId } });
-        // a fee plan or visa history only moves across when the kept record has none
-        if (!keep.installments.length && o.installments.length) await tx.installment.updateMany({ where: { candidateId: o.id }, data: { candidateId: keepId } });
-        if (!keep.stageEvents.length && o.stageEvents.length) await tx.stageEvent.updateMany({ where: { candidateId: o.id }, data: { candidateId: keepId } });
       }
-      // fill gaps on the kept record from the others
+      if (planFrom) await tx.installment.updateMany({ where: { candidateId: planFrom.id }, data: { candidateId: keepId } });
+      if (visaFrom) await tx.stageEvent.updateMany({ where: { candidateId: visaFrom.id }, data: { candidateId: keepId } });
+
+      // fill gaps; fields that belong together are copied together from the same record
       const fill: Record<string, unknown> = {};
-      const fields = ["whatsapp", "email", "gender", "dateOfBirth", "currentLocation", "trade", "experienceYears", "passportNo", "passportExpiry", "jobOrderId", "assignedToId", "feePackageId", "enrolledOn", "stage", "stageEnteredAt", "lastContactedAt", "nextCallAt", "notes"] as const;
-      for (const f of fields) {
-        if (keep[f] === null || keep[f] === undefined || keep[f] === "") {
-          const v = rest.find((o) => o[f] !== null && o[f] !== undefined && o[f] !== "")?.[f];
-          if (v !== undefined) fill[f] = v;
-        }
+      const empty = (v: unknown) => v === null || v === undefined || v === "";
+      const groups: (keyof typeof keep)[][] = [
+        ["passportNo", "passportExpiry"], ["whatsapp"], ["email"], ["gender"], ["dateOfBirth"], ["currentLocation"],
+        ["trade", "experienceYears"], ["jobOrderId"], ["assignedToId"], ["lastContactedAt"], ["nextCallAt"],
+      ];
+      for (const g of groups) {
+        if (!g.every((f) => empty(keep[f]))) continue;
+        const donor = rest.find((o) => g.some((f) => !empty(o[f])));
+        if (donor) for (const f of g) fill[f] = donor[f];
       }
-      if (!keep.agreedAmount) {
-        const a = rest.find((o) => o.agreedAmount > 0)?.agreedAmount;
-        if (a) fill.agreedAmount = a;
-      }
+      // the fee plan and the visa stage travel with the records they came from
+      if (planFrom) Object.assign(fill, { feePackageId: planFrom.feePackageId, agreedAmount: planFrom.agreedAmount, enrolledOn: keep.enrolledOn ?? planFrom.enrolledOn });
+      if (visaFrom) Object.assign(fill, { stage: visaFrom.stage, stageEnteredAt: visaFrom.stageEnteredAt });
       const best = [keep, ...rest].reduce((b, c) => (STATUS_RANK.indexOf(c.status) > STATUS_RANK.indexOf(b.status) ? c : b));
       if (best.status !== keep.status) fill.status = best.status;
-      const extraNotes = rest.map((o) => `Merged from ${o.code} (${o.fullName}, ${o.phone})`).join("\n");
-      fill.notes = [keep.notes ?? (fill.notes as string | undefined), extraNotes].filter(Boolean).join("\n");
+      fill.notes = [keep.notes, ...rest.map((o) => `Merged from ${o.code} (${o.fullName}, ${o.phone})${o.notes ? `: ${o.notes}` : ""}`)].filter(Boolean).join("\n");
       await tx.candidate.update({ where: { id: keepId }, data: fill });
-      await tx.candidate.deleteMany({ where: { id: { in: others } } });
+      await tx.candidate.deleteMany({ where: { id: { in: rest.map((o) => o.id) } } });
     });
     await audit({ userId: user.id, action: "UPDATE", entity: "Candidate", entityId: keepId, summary: `Merged ${rest.map((o) => o.code).join(", ")} into ${keep.code} (${keep.fullName})`, before: rest });
     return `Merged into ${keep.code}.`;

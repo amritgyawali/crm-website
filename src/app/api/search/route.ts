@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
       where: {
         OR: [
           { fullName: { contains: q } }, { code: { contains: q.toUpperCase() } }, { passportNo: { contains: q.toUpperCase() } },
-          { email: { contains: q } }, ...(digits.length >= 4 ? [{ phone: { contains: digits } }] : []),
+          { email: { contains: q } },
+          ...(digits.length >= 4 ? [{ phone: { contains: digits } }, { whatsapp: { contains: digits } }] : []),
+          // local format 050… matches the stored +97150…
+          ...(digits.length >= 5 && digits.startsWith("0") ? [{ phone: { contains: digits.replace(/^0+/, "") } }] : []),
         ],
       },
       take: 8, orderBy: { updatedAt: "desc" },

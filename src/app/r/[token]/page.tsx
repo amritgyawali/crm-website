@@ -13,7 +13,7 @@ export default async function PublicReceipt({ params }: { params: Promise<{ toke
   return (
     <div className="min-h-screen bg-paper print:bg-white py-6 px-4 print:p-0">
       <PrintBar />
-      <Receipt {...r} />
+      <Receipt {...r} masked />
     </div>
   );
 }

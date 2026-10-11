@@ -12,6 +12,11 @@ export function tooManyAttempts(key: string) {
 }
 export function recordFailure(key: string) {
   hits.set(key, [...(hits.get(key) ?? []), Date.now()]);
+  // forget old entries so the map can't grow without limit
+  if (hits.size > 5000) {
+    const now = Date.now();
+    for (const [k, list] of hits) if (!list.some((t) => now - t < WINDOW)) hits.delete(k);
+  }
 }
 export function clearFailures(key: string) {
   hits.delete(key);

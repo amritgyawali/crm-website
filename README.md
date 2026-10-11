@@ -84,7 +84,8 @@ npm start
 - Uploaded files are stored in `./uploads` and served only to signed-in staff — keep this folder on persistent disk.
 - SQLite suits a single office server. For hosted/multi-server setups change `provider` in
   `prisma/schema.prisma` to `postgresql` and point `DATABASE_URL` at the database.
-- Set the server time zone to the office's (e.g. `TZ=Asia/Dubai`) so "today" lists match the office day.
+- "Today" lists and month totals follow `OFFICE_TIMEZONE` (default `Asia/Dubai`), wherever the server is hosted.
+- **Settings → Setup checks** lists anything still to do before real use (secret key, demo logins, company details, backups).
 
 ### Using it from other office computers and phones
 

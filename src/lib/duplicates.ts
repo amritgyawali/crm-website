@@ -23,17 +23,37 @@ export async function findDuplicates(ignored: Set<string>): Promise<DupGroup[]> 
     const n = nameKey(c.fullName);
     if (n.split(" ").length >= 2) add(`name:${n}|${c.nationality.toLowerCase()}`, "Same name and nationality", c.id);
   }
-  // merge overlapping buckets into one group per set of ids
-  const groups = new Map<string, DupGroup>();
-  for (const [k, b] of buckets) {
+  // records linked by any shared bucket form one group (A~B by phone, B~C by name → A, B, C)
+  const parent = new Map<string, string>();
+  const find = (x: string): string => {
+    const p = parent.get(x) ?? x;
+    if (p === x) return x;
+    const root = find(p);
+    parent.set(x, root);
+    return root;
+  };
+  const reasons = new Map<string, Set<string>>();
+  for (const b of buckets.values()) {
     if (b.ids.size < 2) continue;
-    const ids = [...b.ids].sort();
+    const [first, ...rest] = [...b.ids];
+    for (const id of rest) parent.set(find(id), find(first!));
+  }
+  for (const b of buckets.values()) {
+    if (b.ids.size < 2) continue;
+    const root = find([...b.ids][0]!);
+    reasons.set(root, (reasons.get(root) ?? new Set()).add(b.reason));
+  }
+  const members = new Map<string, string[]>();
+  for (const id of new Set([...buckets.values()].filter((b) => b.ids.size > 1).flatMap((b) => [...b.ids]))) {
+    const root = find(id);
+    members.set(root, [...(members.get(root) ?? []), id]);
+  }
+  const groups = new Map<string, DupGroup>();
+  for (const [root, list] of members) {
+    const ids = list.sort();
     const key = ids.join(",");
     if (ignored.has(key)) continue;
-    const existing = groups.get(key);
-    if (existing) existing.reason += `, ${b.reason.toLowerCase()}`;
-    else groups.set(key, { key, reason: b.reason, ids });
-    void k;
+    groups.set(key, { key, reason: [...(reasons.get(root) ?? [])].join(", "), ids });
   }
   return [...groups.values()];
 }

@@ -44,7 +44,9 @@ function date(yymmdd: string, kind: "birth" | "expiry"): string | null {
   // births are in the past; expiries within the next ~20 years
   const century = kind === "birth" ? (yy > nowYY ? 1900 : 2000) : yy < 70 ? 2000 : 1900;
   const iso = `${century + yy}-${mm}-${dd}`;
-  return isNaN(new Date(iso).getTime()) ? null : iso;
+  // reject impossible days (e.g. 30 Feb), which Date would quietly roll into March
+  const dt = new Date(`${iso}T00:00:00Z`);
+  return dt.getUTCMonth() + 1 === Number(mm) && dt.getUTCDate() === Number(dd) ? iso : null;
 }
 
 const title = (s: string) => s.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());

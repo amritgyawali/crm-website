@@ -22,7 +22,10 @@ export async function toXlsx(title: string, cols: Col[], rows: Record<string, un
 export function toCsv(cols: Col[], rows: Record<string, unknown>[]) {
   const esc = (v: unknown) => {
     if (v === null || v === undefined) return "";
-    const s = v instanceof Date ? v.toISOString().slice(0, 10) : String(v);
+    let s = v instanceof Date ? v.toISOString().slice(0, 10) : String(v);
+    // a cell starting with = + - @ would run as a formula in Excel. Phone numbers and
+    // signed numbers ("+971 50…", "-250.00") are safe and left exactly as they are.
+    if (typeof v === "string" && /^[=+\-@\t\r]/.test(s) && !/^[+-][\d\s().-]*$/.test(s)) s = "'" + s;
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return [cols.map((c) => esc(c.header)).join(","), ...rows.map((r) => cols.map((c) => esc(r[c.key])).join(","))].join("\n");

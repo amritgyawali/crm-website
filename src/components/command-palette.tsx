@@ -18,6 +18,8 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0);
   const [recent, setRecent] = useState<RecentItem[]>([]);
+  const [enterPending, setEnterPending] = useState(false);
+  const [searched, setSearched] = useState(""); // the query the current hits belong to
   const input = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -39,6 +41,7 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
 
   useEffect(() => {
     if (open) {
+      setEnterPending(false);
       setRecent(readRecent());
       setQ("");
       setHits([]);
@@ -50,6 +53,8 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
   useEffect(() => {
     if (q.trim().length < 2) {
       setHits([]);
+      setLoading(false);
+      setSearched(q.trim());
       return;
     }
     const ctl = new AbortController();
@@ -58,10 +63,10 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
       try {
         const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctl.signal });
         if (r.ok) setHits((await r.json()).hits);
-      } catch {
-        /* aborted */
-      } finally {
+        setSearched(q.trim());
         setLoading(false);
+      } catch {
+        /* aborted by a newer keystroke: that search will finish the job */
       }
     }, 160);
     return () => {
@@ -80,14 +85,22 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
     return [...recents, ...hits, ...pageHits];
   }, [hits, pages, q, recent]);
 
-  useEffect(() => setActive(0), [items.length]);
-
-  if (!open) return null;
   const go = (it?: Item) => {
     if (!it) return;
     setOpen(false);
     router.push(it.href);
   };
+
+  useEffect(() => setActive(0), [items.length]);
+  useEffect(() => {
+    if (enterPending && searched === q.trim()) {
+      setEnterPending(false);
+      if (items[0]) go(items[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enterPending, searched]);
+
+  if (!open) return null;
   let lastGroup = "";
 
   return (
@@ -101,7 +114,12 @@ export function CommandPalette({ pages }: { pages: { label: string; href: string
             onKeyDown={(e) => {
               if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(a + 1, items.length - 1)); }
               else if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
-              else if (e.key === "Enter") { e.preventDefault(); go(items[active]); }
+              else if (e.key === "Enter") {
+                e.preventDefault();
+                // results for what was typed aren't in yet: open the first one when they arrive
+                if (q.trim().length >= 2 && searched !== q.trim()) setEnterPending(true);
+                else go(items[active]);
+              }
             }}
             placeholder="Name, phone, passport, receipt no., job ref, partner, or a page"
             className="flex-1 h-12 bg-transparent outline-none text-[15px]"

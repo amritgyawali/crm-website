@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
   }
 
   const results: { leadgenId: string; result: string }[] = [];
+  let failed = false;
   for (const entry of body.entry ?? []) {
     for (const ch of entry.changes ?? []) {
       if (ch.field !== "leadgen" || !ch.value) continue;
@@ -81,10 +82,14 @@ export async function POST(req: NextRequest) {
         });
         results.push({ leadgenId, result: r.created ? `created ${r.candidate.code}` : `duplicate of ${r.candidate.code}` });
       } catch (e) {
+        failed = true;
         results.push({ leadgenId, result: e instanceof Error ? e.message : "failed" });
+        console.error("Meta lead failed", leadgenId, e);
       }
     }
   }
-  // always 200 so Meta doesn't retry leads we've seen; problems are in the response for debugging
+  // A failure (Graph API down, database busy) answers 500 so Meta sends the lead again.
+  // Retries are safe: a lead already saved is recognised by its phone number and not created twice.
+  if (failed) return NextResponse.json({ ok: false, results }, { status: 500 });
   return NextResponse.json({ ok: true, results });
 }

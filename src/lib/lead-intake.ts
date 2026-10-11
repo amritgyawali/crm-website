@@ -1,13 +1,14 @@
 import { db } from "./db";
 import { audit } from "./audit";
 import { nextCandidateCode } from "./numbering";
+import { normalizePhone, phoneTail } from "./phone";
 
 export type IncomingLead = { name: string; phone: string; email?: string | null; nationality?: string | null; note?: string | null; campaignId?: string | null; externalIds?: string[] };
 
 /** Creates a candidate from a lead form. Same phone already on file → nothing created. */
 export async function intakeLead(lead: IncomingLead) {
-  const phone = lead.phone.trim();
-  const tail = phone.replace(/\D/g, "").slice(-9);
+  const phone = normalizePhone(lead.phone);
+  const tail = phoneTail(phone);
   const existing = tail.length >= 8 ? await db.candidate.findFirst({ where: { phone: { endsWith: tail } } }) : null;
   if (existing) return { created: false as const, candidate: existing };
 

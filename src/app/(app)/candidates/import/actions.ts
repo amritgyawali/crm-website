@@ -7,6 +7,7 @@ import { audit } from "@/lib/audit";
 import { run, str } from "@/lib/action";
 import { nextCandidateCode } from "@/lib/numbering";
 import { parseLooseDate, readSheet, type ImportRow } from "@/lib/import";
+import { normalizePhone } from "@/lib/phone";
 
 const MAX_ROWS = 2000;
 
@@ -83,7 +84,7 @@ export async function importCandidates(fd: FormData) {
       ready.push({
         row: r,
         data: {
-          fullName: r.fullName!, phone: r.phone!, whatsapp: r.whatsapp ?? null, email: r.email ?? null, nationality: r.nationality!,
+          fullName: r.fullName!, phone: normalizePhone(r.phone!), whatsapp: r.whatsapp ? normalizePhone(r.whatsapp) : null, email: r.email ?? null, nationality: r.nationality!,
           gender: r.gender ?? null, dateOfBirth: parseLooseDate(r.dateOfBirth), currentLocation: r.currentLocation ?? null,
           trade: r.trade ?? null, passportNo: pp ?? null, passportExpiry, leadSource: source!,
           campaignId: source === "CAMPAIGN" ? campaign!.id : null, sourcePartnerId: source === "PARTNER" ? partner!.id : null,
