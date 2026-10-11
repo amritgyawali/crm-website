@@ -34,7 +34,7 @@ function CallRows({ rows, empty }: { rows: Row[]; empty: string }) {
               </div>
               <div className={cx("text-[13px] mt-0.5", r.tone === "red" ? "text-danger" : r.tone === "amber" ? "text-warn" : "text-muted")}>{r.context}</div>
             </div>
-            <span className="inline-flex gap-1.5">{r.remind && <RemindButton phone={r.whatsapp || r.phone} text={r.remind} />}<ContactButtons phone={r.phone} whatsapp={r.whatsapp} /></span>
+            <span className="inline-flex gap-1.5">{r.remind && <RemindButton phone={r.whatsapp || r.phone} text={r.remind} candidateId={r.id} />}<ContactButtons phone={r.phone} whatsapp={r.whatsapp} /></span>
           </div>
           <Disclose label="Log result" className="mt-2">
             <div className="pt-2"><CallLogger action={logCall.bind(null, r.id)} compact /></div>

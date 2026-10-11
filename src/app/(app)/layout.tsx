@@ -1,4 +1,10 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { Suspense } from "react";
+import { ReminderBell, type BellGroup } from "@/components/reminder-bell";
+import { Toaster } from "@/components/toaster";
+import { NavProgress } from "@/components/nav-progress";
 import { requireUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { getSettings } from "@/lib/settings";
@@ -6,12 +12,18 @@ import { getAlerts, alertCount } from "@/lib/alerts";
 import { ROLE_LABEL, type Role } from "@/lib/constants";
 import { Sidebar, type NavGroup } from "@/components/sidebar";
 import { Shortcuts } from "@/components/shortcuts";
+import { CommandPalette, PaletteButton } from "@/components/command-palette";
 import { logout } from "../login/actions";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const s = await getSettings();
-  const alerts = alertCount(await getAlerts(user));
+  const alertGroups = await getAlerts(user);
+  const alerts = alertCount(alertGroups);
+  const bell: BellGroup[] = alertGroups.map((g) => ({
+    key: g.key, title: g.title, count: g.items.length,
+    items: g.items.slice(0, 3).map((i) => ({ id: i.id, title: i.title, detail: i.detail, href: i.href, tone: i.tone })),
+  }));
   const r = user.role;
 
   const groups: NavGroup[] = [
@@ -19,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       items: [
         { href: "/", label: "Today" },
         ...(can(r, "call.log") ? [{ href: "/calls", label: "Call list" }] : []),
+        { href: "/calendar", label: "Calendar" },
         { href: "/alerts", label: "Reminders", count: alerts, urgent: alerts > 0 },
       ],
     },
@@ -37,19 +50,37 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         ...(can(r, "finance.view") || can(r, "payment.record") ? [{ href: "/finance", label: "Fees & collections" }] : []),
         ...(can(r, "expenses.manage") ? [{ href: "/expenses", label: "Office expenses" }] : []),
         ...(can(r, "campaigns.view") ? [{ href: "/campaigns", label: "Campaigns" }] : []),
+        ...(can(r, "call.log") ? [{ href: "/messages", label: "WhatsApp sending" }] : []),
       ],
     },
     {
       label: "Office",
       items: [
         { href: "/staff", label: can(r, "staff.manage") ? "Staff" : "My targets" },
-        ...(can(r, "reports.view") ? [{ href: "/reports", label: "Reports & export" }] : []),
+        ...(can(r, "reports.view") ? [{ href: "/insights", label: "Insights" }, { href: "/reports", label: "Reports & export" }] : []),
         ...(can(r, "settings.manage") ? [{ href: "/settings", label: "Settings" }] : []),
       ],
     },
   ].filter((g) => g.items.length);
 
+  // everything the palette can jump to, beyond the sidebar
+  const pages = [
+    ...groups.flatMap((g) => g.items.map((i) => ({ label: i.label, href: i.href }))),
+    ...(can(r, "candidate.edit") ? [{ label: "New candidate", href: "/candidates/new", keywords: "add lead register" }, { label: "Import candidates", href: "/candidates/import", keywords: "excel csv upload" }] : []),
+    { label: "Visa board", href: "/visa/board", keywords: "kanban stages" },
+    { label: "Candidates: fees overdue", href: "/candidates?view=overdue", keywords: "late unpaid" },
+    { label: "Candidates: not contacted", href: "/candidates?view=stale", keywords: "forgotten leads" },
+    ...(can(r, "finance.view") ? [{ label: "Daily collections", href: "/finance/collections", keywords: "cash bank day sheet" }, { label: "Refunds", href: "/finance/refunds" }, { label: "Fee packages", href: "/finance/packages" }] : []),
+    ...(can(r, "call.log") ? [{ label: "Call counts", href: "/calls/stats", keywords: "statistics performance" }] : []),
+    ...(can(r, "settings.manage") ? [{ label: "Users & roles", href: "/settings/users", keywords: "staff login password" }, { label: "Activity log", href: "/settings/activity", keywords: "audit history" }, { label: "Duplicates", href: "/settings/duplicates", keywords: "merge clean data" }] : []),
+    { label: "My account", href: "/account", keywords: "password" },
+  ];
+
+  const themeCookie = (await cookies()).get("theme")?.value;
+  const theme = themeCookie === "light" || themeCookie === "dark" ? themeCookie : "system";
   const footer = (
+    <div className="space-y-2.5">
+    <ThemeSwitch initial={theme} />
     <div className="flex items-center justify-between gap-2">
       <div className="min-w-0">
         <Link href="/account" className="block text-[13px] font-medium truncate no-underline hover:underline">{user.name}</Link>
@@ -59,11 +90,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <button className="text-[12px] text-muted hover:text-ink underline underline-offset-2">Sign out</button>
       </form>
     </div>
+    </div>
   );
 
   return (
     <div className="lg:flex min-h-screen">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:bg-ink focus:text-paper focus:px-3 focus:py-1.5 focus:rounded-[3px]">Skip to content</a>
+      <Suspense fallback={null}><NavProgress /></Suspense>
+      <Toaster />
       <Shortcuts />
+      <CommandPalette pages={pages} />
       <Sidebar groups={groups} company={s.companyName} footer={footer} />
       <div className="flex-1 min-w-0">
         <div className="no-print hidden lg:flex items-center justify-between gap-4 h-14 px-8 border-b border-rule bg-paper/95 sticky top-0 z-10 backdrop-blur-[2px]">
@@ -80,13 +116,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
           </form>
           <div className="flex items-center gap-4 text-[13px]">
+            <PaletteButton className="text-muted hover:text-ink" />
+            <ReminderBell groups={bell} />
             {can(r, "candidate.edit") && (
               <Link href="/candidates/new" className="no-underline font-medium text-accent hover:underline">+ New candidate</Link>
             )}
             <span className="text-muted num">{new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</span>
           </div>
         </div>
-        <main className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-[1400px]">{children}</main>
+        <main id="main" tabIndex={-1} className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-[1400px] outline-none">{children}</main>
       </div>
     </div>
   );

@@ -63,7 +63,7 @@ export default async function VisaBoard({ searchParams }: { searchParams: Promis
                     const passport = c.passportExpiry && c.passportExpiry < addMonths(now, 12) && c.status === "IN_PROCESS";
                     return (
                       <li key={c.id}>
-                        <Link href={`/candidates/${c.id}`} className={cx("block bg-white border rounded-[3px] px-2.5 py-2 no-underline hover:border-ink-2", over ? "border-warn/60 bg-warn-tint/40" : "border-rule", L.overdue > 0 && "border-l-[3px] border-l-danger")}>
+                        <Link href={`/candidates/${c.id}`} className={cx("block bg-field border rounded-[3px] px-2.5 py-2 no-underline hover:border-ink-2", over ? "border-warn/60 bg-warn-tint/40" : "border-rule", L.overdue > 0 && "border-l-[3px] border-l-danger")}>
                           <div className="text-[13px] font-medium leading-tight">{c.fullName}</div>
                           <div className="text-[11.5px] text-muted mt-0.5 truncate">{c.jobOrder?.position}, {c.jobOrder?.country}</div>
                           <div className="flex items-center justify-between mt-1.5 text-[11.5px]">

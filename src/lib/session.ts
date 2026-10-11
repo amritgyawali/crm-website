@@ -30,10 +30,10 @@ export async function readSession(token?: string): Promise<SessionPayload | null
   }
 }
 
-export const sessionCookieOptions = {
-  httpOnly: true,
-  sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1",
-  path: "/",
-  maxAge: MAX_AGE,
-};
+/**
+ * Cookie settings. `secure` follows the actual connection: on https (or behind a proxy that
+ * says so) the cookie is https-only; on a plain http office network it still works.
+ */
+export function sessionCookieOptions(isHttps: boolean) {
+  return { httpOnly: true, sameSite: "lax" as const, secure: isHttps, path: "/", maxAge: MAX_AGE };
+}

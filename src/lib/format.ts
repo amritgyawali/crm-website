@@ -81,3 +81,6 @@ export function amountInWords(v: number, unit = "dirhams", sub = "fils") {
   const words = (parts.join(" ") || "zero") + " " + unit + (fils ? ` and ${fils} ${sub}` : "");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/** "After visa approval" → "after visa approval", for use mid-sentence. */
+export const midSentence = (s: string) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : s);

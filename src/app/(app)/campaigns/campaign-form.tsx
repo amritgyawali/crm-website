@@ -8,7 +8,7 @@ type C = { name: string; platform: string; jobOrderId: string | null; startDate:
 
 export function CampaignForm({ action, jobs, c }: { action: (fd: FormData) => Promise<ActionState>; jobs: { value: string; label: string }[]; c?: C }) {
   return (
-    <ActionForm action={action} reset={false} className="space-y-3.5">
+    <ActionForm action={action} reset={false} guard className="space-y-3.5">
       <FormGrid cols={2}>
         <Field label="Campaign name" required><Input name="name" required defaultValue={c?.name} placeholder="Croatia hotel jobs, October boost" /></Field>
         <Field label="Job order it promotes"><Select name="jobOrderId" defaultValue={c?.jobOrderId ?? ""} placeholder="General / several jobs" options={jobs} /></Field>

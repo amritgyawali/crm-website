@@ -6,6 +6,7 @@ import { addDays, format } from "date-fns";
 import type { ActionState } from "@/lib/action";
 import { CALL_OUTCOMES, type CallOutcome } from "@/lib/constants";
 import { btn, cx } from "@/components/ui";
+import { toast } from "@/lib/toast";
 
 const DEFAULT_NEXT: Partial<Record<CallOutcome, number>> = {
   NO_ANSWER: 1, CALL_BACK: 1, INTERESTED: 2, ENROLLED: 7, PAYMENT_PROMISED: 3,
@@ -52,8 +53,9 @@ export function CallLogger({ action, compact }: { action: (fd: FormData) => Prom
     }
     start(async () => {
       const r = await action(fd);
-      setMsg(r);
+      setMsg(r?.ok ? null : r);
       if (r?.ok) {
+        toast(r.message ?? "Call saved.");
         setOutcome("");
         setNote("");
         setNextIn(0);
@@ -80,7 +82,7 @@ export function CallLogger({ action, compact }: { action: (fd: FormData) => Prom
             onClick={() => choose(o.value)}
             className={cx(
               "text-left px-2.5 py-2 text-[13px] border rounded-[3px] leading-tight",
-              outcome === o.value ? "border-ink bg-ink text-paper font-medium" : "border-rule-2 bg-white hover:border-ink-2",
+              outcome === o.value ? "border-ink bg-ink text-paper font-medium" : "border-rule-2 bg-field hover:border-ink-2",
             )}
           >
             {o.label}

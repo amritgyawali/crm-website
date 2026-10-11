@@ -27,6 +27,7 @@ export function Sidebar({ groups, company, footer }: { groups: NavGroup[]; compa
                 <li key={it.href}>
                   <Link
                     href={it.href}
+                    aria-current={active ? "page" : undefined}
                     className={cx(
                       "flex items-center justify-between gap-2 pl-5 pr-4 py-[5px] no-underline text-[13.5px] border-l-[3px]",
                       active ? "border-ink bg-well font-semibold text-ink" : "border-transparent text-ink-2 hover:text-ink hover:bg-well/60",
@@ -34,7 +35,7 @@ export function Sidebar({ groups, company, footer }: { groups: NavGroup[]; compa
                   >
                     <span>{it.label}</span>
                     {!!it.count && (
-                      <span className={cx("num text-[11.5px] px-1.5 rounded-[2px]", it.urgent ? "bg-danger text-white" : "text-muted")}>{it.count}</span>
+                      <span className={cx("num text-[11.5px] px-1.5 rounded-[2px]", it.urgent ? "bg-danger text-sheet" : "text-muted")}>{it.count}</span>
                     )}
                   </Link>
                 </li>
@@ -51,9 +52,14 @@ export function Sidebar({ groups, company, footer }: { groups: NavGroup[]; compa
       {/* mobile bar */}
       <div className="lg:hidden no-print sticky top-0 z-30 flex items-center justify-between h-12 px-4 bg-sheet border-b border-rule">
         <span className="font-serif font-semibold text-[16px] truncate">{company}</span>
-        <button type="button" onClick={() => setOpen((o) => !o)} className="text-[13px] font-medium px-2 py-1 border border-rule-2 rounded-[3px]" aria-expanded={open}>
-          {open ? "Close" : "Menu"}
-        </button>
+        <span className="flex gap-2">
+          <button type="button" onClick={() => window.dispatchEvent(new Event("open-palette"))} className="text-[13px] font-medium px-2 py-1 border border-rule-2 rounded-[3px]">
+            Search
+          </button>
+          <button type="button" onClick={() => setOpen((o) => !o)} className="text-[13px] font-medium px-2 py-1 border border-rule-2 rounded-[3px]" aria-expanded={open}>
+            {open ? "Close" : "Menu"}
+          </button>
+        </span>
       </div>
       {open && (
         <div className="lg:hidden fixed inset-0 top-12 z-20 bg-sheet flex flex-col">

@@ -16,6 +16,9 @@ import { Pager } from "@/components/pager";
 import { SelectAll } from "@/components/select-all";
 import { StageTag, StatusTag } from "@/components/tags";
 import { bulkAssign } from "./actions";
+import { Suspense } from "react";
+import { KeyHint, RowNav } from "@/components/row-nav";
+import { SavedViews } from "@/components/saved-views";
 
 export const metadata = { title: "Candidates" };
 const PER = 50;
@@ -45,7 +48,8 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
   if (sp.q) {
     const q = sp.q.trim();
     and.push({ OR: [
-      { fullName: { contains: q } }, { phone: { contains: q.replace(/\s/g, "") } }, { passportNo: { contains: q } },
+      { fullName: { contains: q } }, { passportNo: { contains: q.toUpperCase() } },
+      ...(q.replace(/\D/g, "").length >= 4 ? [{ phone: { contains: q.replace(/\D/g, "").replace(/^0+/, "") } }] : []),
       { code: { contains: q.toUpperCase() } }, { email: { contains: q } },
     ] });
   }
@@ -139,11 +143,13 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
       <nav className="flex flex-wrap gap-1.5 mb-3" aria-label="Quick views">
         {views.map((v) => (
           <Link key={v.key} href={link({ view: v.key || undefined, sort: undefined })}
-            className={cx("px-2.5 h-7 inline-flex items-center rounded-[3px] border text-[12.5px] no-underline", (sp.view ?? "") === v.key ? "bg-ink text-paper border-ink" : "bg-white border-rule-2 text-ink-2 hover:border-ink-2")}>
+            className={cx("px-2.5 h-7 inline-flex items-center rounded-[3px] border text-[12.5px] no-underline", (sp.view ?? "") === v.key ? "bg-ink text-paper border-ink" : "bg-field border-rule-2 text-ink-2 hover:border-ink-2")}>
             {v.label}
           </Link>
         ))}
       </nav>
+
+      <Suspense fallback={null}><SavedViews storageKey="candidates" /></Suspense>
 
       <FilterForm>
         <Input name="q" defaultValue={sp.q} placeholder="Name, phone, passport, code" className="!w-[240px]" />
@@ -176,6 +182,33 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
         {rows.length === 0 ? (
           <Empty>No candidates match. Try a shorter search, or clear the filters.</Empty>
         ) : (
+          <>
+          {/* phones: one card per candidate */}
+          <ul className="md:hidden divide-y divide-rule">
+            {rows.map((c) => {
+              const bal = c.agreedAmount - (paidMap.get(c.id) ?? 0);
+              const closed = CLOSED_STATUSES.includes(c.status as CandidateStatus);
+              return (
+                <li key={c.id}>
+                  <Link href={`/candidates/${c.id}`} className="block px-4 py-3 no-underline active:bg-hover">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{c.fullName}</div>
+                        <div className="text-[12px] text-muted truncate">{c.jobOrder ? `${c.jobOrder.position}, ${c.jobOrder.country}` : c.nationality} · {c.assignedTo?.name ?? "no staff"}</div>
+                      </div>
+                      <StatusTag status={c.status} />
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5 text-[12px]">
+                      <span className={cx(c.nextCallAt && c.nextCallAt < now ? "text-danger" : "text-muted")}>{c.nextCallAt ? `Call ${dShort(c.nextCallAt)}` : c.lastContactedAt ? `Last call ${relDays(c.lastContactedAt, now)}` : "Never called"}</span>
+                      {c.agreedAmount > 0 && !closed && <span className="num">{bal > 0 ? `${Math.round(bal).toLocaleString()} due` : "Paid"}</span>}
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="hidden md:block">
+          <RowNav>
           <TableWrap>
             <table className="grid-table">
               <thead>
@@ -223,6 +256,10 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
               </tbody>
             </table>
           </TableWrap>
+          </RowNav>
+          <div className="px-4 py-2 border-t border-rule flex justify-end"><KeyHint /></div>
+          </div>
+          </>
         )}
         <Pager page={page} pages={pages} params={sp as Record<string, string>} base="/candidates" />
       </Section>

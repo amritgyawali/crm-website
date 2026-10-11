@@ -8,6 +8,7 @@ import { Disclose, Empty, Money, PageHeader, Section, TableWrap, Tag, btn } from
 import { campaignReport } from "./report";
 import { CampaignForm } from "./campaign-form";
 import { saveCampaign } from "./actions";
+import { RowNav } from "@/components/row-nav";
 
 export const metadata = { title: "Campaigns" };
 
@@ -31,7 +32,7 @@ export default async function CampaignsPage() {
       />
       <Section flush>
         {rows.length === 0 ? <Empty>No campaigns recorded.</Empty> : (
-          <TableWrap>
+          <RowNav><TableWrap>
             <table className="grid-table">
               <thead>
                 <tr>
@@ -67,7 +68,7 @@ export default async function CampaignsPage() {
                 </tr>
               </tfoot>
             </table>
-          </TableWrap>
+          </TableWrap></RowNav>
         )}
         <p className="px-4 py-2 text-[12px] text-muted border-t border-rule">Enrolled = leads who enrolled and paid the first installment. Collected = all candidate payments from this campaign&apos;s leads. Return = collected ÷ spent.</p>
       </Section>

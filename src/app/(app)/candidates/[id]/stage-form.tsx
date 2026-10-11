@@ -5,9 +5,8 @@ import { ActionForm, Submit } from "@/components/forms";
 import { Field, FormGrid, Input, Select, Textarea } from "@/components/ui";
 import type { ActionState } from "@/lib/action";
 import { REFUSABLE_STAGES, STAGES, type Stage } from "@/lib/constants";
-import { toDateInput } from "@/lib/dates";
 
-export function StageForm({ action, suggested, paid }: { action: (fd: FormData) => Promise<ActionState>; suggested: Stage; paid: number }) {
+export function StageForm({ action, suggested, paid, today }: { action: (fd: FormData) => Promise<ActionState>; suggested: Stage; paid: number; today: string }) {
   const [stage, setStage] = useState<Stage>(suggested);
   const [result, setResult] = useState<"DONE" | "REFUSED">("DONE");
   const refusable = REFUSABLE_STAGES.includes(stage);
@@ -24,7 +23,7 @@ export function StageForm({ action, suggested, paid }: { action: (fd: FormData) 
           </Field>
         )}
         <Field label="Date">
-          <Input name="date" type="date" defaultValue={toDateInput(new Date())} required />
+          <Input name="date" type="date" defaultValue={today} required />
         </Field>
       </FormGrid>
 
@@ -39,9 +38,14 @@ export function StageForm({ action, suggested, paid }: { action: (fd: FormData) 
         </FormGrid>
       )}
       {stage === "FLIGHT_BOOKED" && (
-        <Field label="Flight details">
-          <Input name="flightDetails" placeholder="Airline, flight no., date, DXB → destination, PNR" required />
-        </Field>
+        <FormGrid cols={2}>
+          <Field label="Departure date & time">
+            <Input name="appointmentAt" type="datetime-local" required />
+          </Field>
+          <Field label="Flight details">
+            <Input name="flightDetails" placeholder="Airline, flight no., DXB → destination, PNR" required />
+          </Field>
+        </FormGrid>
       )}
       {result === "REFUSED" && (
         <div className="p-3 bg-danger-tint border border-danger/20 rounded-[3px] space-y-3">

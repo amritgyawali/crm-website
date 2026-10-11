@@ -13,9 +13,14 @@ export type ReceiptData = {
   candidate: { fullName: string; code: string; passportNo: string | null; phone: string; jobOrder: { position: string; country: string } | null; feePackage: { name: string } | null };
 };
 
+const maskEnd = (s: string, keep: number) => (s.length <= keep ? s : "•".repeat(Math.min(s.length - keep, 6)) + s.slice(-keep));
+const maskPhone = (s: string) => (s.length < 8 ? s : s.slice(0, 4) + "•".repeat(s.length - 7) + s.slice(-3));
+
 export function Receipt({
-  p, company, balanceAfter, paidToDate, agreed,
+  p, company, balanceAfter, paidToDate, agreed, masked = false,
 }: {
+  /** Public link: hide most of the passport and phone number. */
+  masked?: boolean;
   p: ReceiptData;
   company: { name: string; address: string; phone: string; email: string; trn: string };
   balanceAfter: number;
@@ -42,8 +47,8 @@ export function Receipt({
         <div>
           <div className="label-caps mb-1">Received from</div>
           <div className="text-[16px] font-medium">{p.candidate.fullName}</div>
-          <div className="text-muted num">{p.candidate.code}{p.candidate.passportNo ? ` · Passport ${p.candidate.passportNo}` : ""}</div>
-          <div className="text-muted num">{p.candidate.phone}</div>
+          <div className="text-muted num">{p.candidate.code}{p.candidate.passportNo ? ` · Passport ${masked ? maskEnd(p.candidate.passportNo, 3) : p.candidate.passportNo}` : ""}</div>
+          <div className="text-muted num">{masked ? maskPhone(p.candidate.phone) : p.candidate.phone}</div>
         </div>
         <div>
           <div className="label-caps mb-1">Towards</div>

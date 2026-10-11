@@ -48,7 +48,7 @@ export default async function AccountPage() {
           <Section title="Keyboard shortcuts">
             <ul className="text-[13px] space-y-1.5">
               {[["/", "Search candidates"], ["n", "New candidate"], ["c", "My call list"]].map(([k, v]) => (
-                <li key={k} className="flex items-center gap-3"><kbd className="num text-[12px] border border-rule-2 rounded-[2px] px-1.5 bg-white min-w-[22px] text-center">{k}</kbd>{v}</li>
+                <li key={k} className="flex items-center gap-3"><kbd className="num text-[12px] border border-rule-2 rounded-[2px] px-1.5 bg-field min-w-[22px] text-center">{k}</kbd>{v}</li>
               ))}
             </ul>
           </Section>

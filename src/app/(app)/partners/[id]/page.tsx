@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addDays } from "date-fns";
 import { db } from "@/lib/db";
+import { TrackRecent } from "@/components/recent";
 import { requireUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { partnerMoney } from "@/lib/partners";
@@ -59,6 +60,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ id: st
 
   return (
     <>
+      <TrackRecent item={{ group: "Partners", title: p.name, detail: p.country, href: `/partners/${p.id}` }} />
       <PageHeader
         back={{ href: "/partners", label: "Partners" }}
         title={p.name}

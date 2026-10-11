@@ -15,7 +15,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ path: s
   try {
     const data = await readFile(file);
     return new NextResponse(new Uint8Array(data), {
-      headers: { "Content-Type": TYPES[path.extname(file).toLowerCase()] ?? "application/octet-stream", "Cache-Control": "private, max-age=3600", "Content-Disposition": "inline" },
+      headers: {
+        "Content-Type": TYPES[path.extname(file).toLowerCase()] ?? "application/octet-stream",
+        "Cache-Control": "private, max-age=3600",
+        // only known document and image types open in the browser; anything else downloads
+        "Content-Disposition": TYPES[path.extname(file).toLowerCase()] ? "inline" : "attachment",
+        "X-Content-Type-Options": "nosniff",
+      },
     });
   } catch {
     return new NextResponse("Not found", { status: 404 });

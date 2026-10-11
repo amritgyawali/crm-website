@@ -16,7 +16,7 @@ export default async function ImportPage() {
       <PageHeader title="Import candidates" back={{ href: "/candidates", label: "Candidates" }} meta="Bring in an existing list from Excel or CSV. Duplicates (same phone or passport) are skipped." />
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Section title="1. Upload the file">
-          <ActionForm action={importCandidates} reset={false} className="space-y-4">
+          <ActionForm action={importCandidates} reset={false} inlineSuccess className="space-y-4">
             <Field label="Excel (.xlsx) or CSV file" required><Input name="file" type="file" accept=".xlsx,.csv,text/csv" required /></Field>
             <FormGrid cols={2}>
               <Field label="Lead source when the column is empty" hint="Every candidate must have a source">

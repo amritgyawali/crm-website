@@ -25,6 +25,11 @@
   --color-info: #2d4b66;
   --color-info-tint: #e1e8ef;
   --color-mark: #fbefb4;
+  --color-field: #ffffff;
+  --color-hover: #f8f6f1;
+  --color-on-accent: #ffffff;
+  --color-chart-a: #1f7a55;
+  --color-chart-b: #c4793a;
 
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -34,7 +39,65 @@
   --radius-sm: 3px;
 }
 
+/*
+  Night ledger: the same book under a desk lamp. Applied when the person picks it,
+  or when their device is in dark mode and they haven't chosen.
+*/
 @layer base {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-paper: #151412;
+    --color-sheet: #1c1b18;
+    --color-ink: #ece8df;
+    --color-ink-2: #c8c2b5;
+    --color-muted: #938c7f;
+    --color-rule: #2e2c28;
+    --color-rule-2: #46433d;
+    --color-well: #26241f;
+    --color-accent: #4fae86;
+    --color-accent-2: #6cc29d;
+    --color-accent-tint: #1b3027;
+    --color-danger: #e0715c;
+    --color-danger-tint: #3a1e18;
+    --color-warn: #d9a441;
+    --color-warn-tint: #33281a;
+    --color-info: #8fb3d6;
+    --color-info-tint: #1b2733;
+    --color-mark: #4a4120;
+    --color-field: #211f1c;
+    --color-hover: #23211d;
+    --color-on-accent: #0f1a14;
+    --color-chart-a: #3fa77a;
+    --color-chart-b: #c47d3f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+      color-scheme: dark;
+      --color-paper: #151412;
+      --color-sheet: #1c1b18;
+      --color-ink: #ece8df;
+      --color-ink-2: #c8c2b5;
+      --color-muted: #938c7f;
+      --color-rule: #2e2c28;
+      --color-rule-2: #46433d;
+      --color-well: #26241f;
+      --color-accent: #4fae86;
+      --color-accent-2: #6cc29d;
+      --color-accent-tint: #1b3027;
+      --color-danger: #e0715c;
+      --color-danger-tint: #3a1e18;
+      --color-warn: #d9a441;
+      --color-warn-tint: #33281a;
+      --color-info: #8fb3d6;
+      --color-info-tint: #1b2733;
+      --color-mark: #4a4120;
+      --color-field: #211f1c;
+      --color-hover: #23211d;
+      --color-on-accent: #0f1a14;
+      --color-chart-a: #3fa77a;
+      --color-chart-b: #c47d3f;
+    }
+  }
   html {
     -webkit-text-size-adjust: 100%;
   }
@@ -85,7 +148,7 @@
   .control {
     display: block;
     width: 100%;
-    background: #fff;
+    background: var(--color-field);
     border: 1px solid var(--color-rule-2);
     border-radius: var(--radius-sm);
     padding: 6px 9px;
@@ -97,6 +160,12 @@
     border-color: var(--color-accent);
     box-shadow: 0 0 0 1px var(--color-accent);
   }
+  .control:user-invalid {
+    border-color: var(--color-danger);
+  }
+  .control:user-invalid:focus {
+    box-shadow: 0 0 0 1px var(--color-danger);
+  }
   .control::placeholder {
     color: #a39d92;
   }
@@ -106,6 +175,14 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2345423c' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 9px center;
+  }
+  :root[data-theme="dark"] select.control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23c8c2b5' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) select.control {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23c8c2b5' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");
+    }
   }
   textarea.control {
     min-height: 64px;
@@ -143,7 +220,13 @@
     vertical-align: top;
   }
   .grid-table tbody tr:hover td {
-    background: #f8f6f1;
+    background: var(--color-hover);
+  }
+  .grid-table tbody tr[data-active] td {
+    background: var(--color-mark);
+  }
+  .grid-table tbody tr[data-active] td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-ink);
   }
   .grid-table tfoot td {
     border-top: 1px solid var(--color-ink);
@@ -182,5 +265,34 @@
   }
   .no-print {
     display: none !important;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes nav-load {
+  from {
+    width: 0;
+  }
+  to {
+    width: 92%;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
   }
 }

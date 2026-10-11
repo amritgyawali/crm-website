@@ -28,7 +28,9 @@ export async function login(fd: FormData) {
     }
     clearFailures(key);
     const token = await signSession({ uid: user.id, role: user.role, name: user.name });
-    (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions);
+    const h = await headers();
+    const isHttps = (h.get("x-forwarded-proto") ?? "").split(",")[0]?.trim() === "https" || (h.get("origin") ?? "").startsWith("https://");
+    (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions(isHttps));
     await audit({ userId: user.id, action: "LOGIN", entity: "User", entityId: user.id, summary: `${user.name} signed in` });
   });
   if (res?.ok) redirect(next);

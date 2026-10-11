@@ -31,7 +31,7 @@ function DueTable({ rows, today, write }: { rows: DueItem[]; today: Date; write:
               <td className="text-[13px]">{x.assignedTo ?? "—"}</td>
               <td className="r font-medium"><Money v={x.outstanding} /></td>
               <td className="r text-muted"><Money v={x.balance} /></td>
-              <td className="text-right whitespace-nowrap"><span className="inline-flex gap-1.5"><RemindButton phone={x.whatsapp || x.phone} text={write(x)} /><ContactButtons phone={x.phone} whatsapp={x.whatsapp} /></span></td>
+              <td className="text-right whitespace-nowrap"><span className="inline-flex gap-1.5"><RemindButton phone={x.whatsapp || x.phone} text={write(x)} candidateId={x.candidateId} /><ContactButtons phone={x.phone} whatsapp={x.whatsapp} /></span></td>
             </tr>
           ))}
         </tbody>

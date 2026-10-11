@@ -5,13 +5,15 @@ import { ActionForm, Submit } from "@/components/forms";
 import { Field, FormGrid, Input, Select, Textarea } from "@/components/ui";
 import type { ActionState } from "@/lib/action";
 import { CANDIDATE_STATUS, LEAD_SOURCES, NATIONALITIES } from "@/lib/constants";
+import { PassportFill } from "./passport-fill";
 
 type Opt = { value: string; label: string };
 type Defaults = Partial<Record<string, string | null>>;
 
 export function CandidateForm({
-  action, defaults = {}, campaigns, partners, jobs, staff, canAssign, canStatus, submitLabel,
+  action, defaults = {}, campaigns, partners, jobs, staff, canAssign, canStatus, submitLabel, photoScan = false,
 }: {
+  photoScan?: boolean;
   action: (fd: FormData) => Promise<ActionState>;
   defaults?: Defaults;
   campaigns: Opt[];
@@ -26,7 +28,8 @@ export function CandidateForm({
   const v = (k: string) => defaults[k] ?? "";
 
   return (
-    <ActionForm action={action} reset={false} className="space-y-6">
+    <ActionForm action={action} reset={false} guard className="space-y-6">
+      <PassportFill photoEnabled={photoScan} />
       <fieldset>
         <legend className="label-caps mb-3">Where did this candidate come from?</legend>
         <FormGrid cols={3}>

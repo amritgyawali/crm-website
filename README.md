@@ -18,6 +18,7 @@ shows their calls, fee ledger, payments, refunds, documents and visa progress to
 | **Campaigns** | Campaign records with spend; compulsory lead source on every candidate; report of leads, enrolled (paid first installment), deployed, cost per enrolment and money collected. `/api/leads` endpoint for Facebook/Instagram lead forms. |
 | **Office expenses** | Recurring bills (rent, DEWA, internet, phones, software, licences) — paying one creates the next. One-time expenses with photo/PDF receipt and approval. Bills due in 7 / 30 days and overdue. Monthly income minus costs. |
 | **Office** | Attendance with self check-in, payroll calculated from attendance and approved before payment, monthly targets with live progress, staff performance record, management dashboard, reminders page, WhatsApp templates, role-based logins, activity log, Excel/CSV exports, printable PDFs, daily backup. |
+| **Tools** | Ctrl+K search across candidates, partners, job orders, campaigns and receipts. Office calendar (fees due, call-backs, embassy appointments, flights, check-ins, bills, expiries). Insights: conversion funnel by source and staff, speed to first call, fees owed by age, 8-week collection forecast. WhatsApp sending queue with a per-candidate message log. Passport fill from the machine-readable lines (check digits verified) or a photo. Duplicate finder with merge. Facebook/Instagram Lead Ads webhook. Installable on phones. |
 | **Working faster** | Quick views on the candidate list (fees overdue, due this week, call-backs, not contacted, no staff, passport expiring), sortable columns, bulk assign, one-tap WhatsApp payment reminders with the amount and date filled in, Excel/CSV import, visa board view, keyboard shortcuts, sign-in attempt limit, change-your-own-password. |
 
 ## Run it locally
@@ -26,7 +27,7 @@ Requires Node.js 20+.
 
 ```bash
 npm install
-cp .env.example .env      # then set SESSION_SECRET to a long random string
+cp .env.example .env      # Windows: copy .env.example .env   — then set SESSION_SECRET to a long random string
 npm run setup             # creates the database and loads demo data
 npm run dev               # http://localhost:3000
 ```
@@ -55,7 +56,15 @@ Forgot the admin password? `npm run create-admin -- --email you@company.com --pa
 
 ### Keyboard shortcuts
 
-`/` search candidates · `n` new candidate · `c` call list
+`Ctrl K` search everything · `/` search candidates · `n` new candidate · `c` call list ·
+in lists `j` / `k` move, `Enter` open, `x` tick, `Esc` let go.
+
+### Look and feel
+
+Day and Night themes (or Auto, following the device), switched at the bottom of the sidebar and remembered per
+person. Confirmations appear as short notes in the corner; a thin bar at the top shows a page is loading. Long
+candidate records keep a slim bar at the top with the balance, Call / WhatsApp and section jumps. Lists can be
+saved as named views, and on phones the candidate list shows cards with filters folded away.
 
 ## Roles
 
@@ -75,7 +84,22 @@ npm start
 - Uploaded files are stored in `./uploads` and served only to signed-in staff — keep this folder on persistent disk.
 - SQLite suits a single office server. For hosted/multi-server setups change `provider` in
   `prisma/schema.prisma` to `postgresql` and point `DATABASE_URL` at the database.
-- Set the server time zone to the office's (e.g. `TZ=Asia/Dubai`) so "today" lists match the office day.
+- "Today" lists and month totals follow `OFFICE_TIMEZONE` (default `Asia/Dubai`), wherever the server is hosted.
+- **Settings → Setup checks** lists anything still to do before real use (secret key, demo logins, company details, backups).
+
+### Using it from other office computers and phones
+
+Run `npm run build` then `npm start -- -H 0.0.0.0` on the office server and open `http://<server-ip>:3000` from
+any device on the same network. Sign-in works over plain http on the office network; put it behind https
+(e.g. a reverse proxy with a certificate) before opening it to the internet. On a phone, use the browser's
+"Add to Home screen" to install it like an app.
+
+### Passport photo reading (optional)
+
+Set `ANTHROPIC_API_KEY` to show an "Upload photo" button on the candidate form. The photo is sent to
+Anthropic's API (model `claude-opus-5-5`), read, and the form is filled for staff to check; the CRM does not
+store the photo. Without a key, staff can still paste the two lines from the bottom of the passport page —
+those are read and checked locally.
 
 ### Daily backup
 
@@ -97,6 +121,11 @@ x-api-key: <LEADS_API_KEY>
 ```
 
 The lead is created as a new candidate with the matching campaign as its source. Duplicates (same phone) are ignored.
+
+**Direct from Meta (no Zapier):** in your Meta app add a Webhooks subscription for the Page's `leadgen` field with
+callback URL `https://<your-domain>/api/leads/meta` and verify token = `META_VERIFY_TOKEN`. Set `META_APP_SECRET`
+(used to check each delivery's signature) and a Page access token with `leads_retrieval` as `META_PAGE_TOKEN`.
+Put the ad ID or lead form ID on the campaign so leads are credited to it.
 
 ## Tech
 

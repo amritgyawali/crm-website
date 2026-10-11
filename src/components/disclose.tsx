@@ -13,7 +13,7 @@ export function Disclose({ label, children, open, className }: { label: ReactNod
     <details
       open={isOpen}
       onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
-      className={cx("group border border-rule rounded-[3px] bg-white", className)}
+      className={cx("group border border-rule rounded-[3px] bg-field", className)}
     >
       <summary className="list-none cursor-pointer select-none px-3 py-2 text-[13px] font-medium flex items-center justify-between [&::-webkit-details-marker]:hidden">
         <span>{label}</span>

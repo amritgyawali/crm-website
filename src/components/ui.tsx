@@ -9,15 +9,15 @@ export function cx(...c: (string | number | false | null | undefined)[]) {
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "quiet";
 const BTN: Record<Variant, string> = {
-  primary: "bg-accent text-white border-accent hover:bg-accent-2 hover:border-accent-2",
-  secondary: "bg-white text-ink border-rule-2 hover:border-ink-2",
+  primary: "bg-accent text-on-accent border-accent hover:bg-accent-2 hover:border-accent-2",
+  secondary: "bg-field text-ink border-rule-2 hover:border-ink-2",
   ghost: "bg-transparent text-ink border-transparent hover:bg-well",
-  danger: "bg-white text-danger border-danger/40 hover:bg-danger-tint",
+  danger: "bg-field text-danger border-danger/40 hover:bg-danger-tint",
   quiet: "bg-well text-ink border-transparent hover:bg-rule",
 };
 export function btn(variant: Variant = "secondary", size: "sm" | "md" = "md") {
   return cx(
-    "inline-flex items-center justify-center gap-1.5 border rounded-[3px] font-medium whitespace-nowrap no-underline transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer",
+    "inline-flex items-center justify-center gap-1.5 border rounded-[3px] font-medium whitespace-nowrap no-underline transition-[color,background-color,border-color,transform] active:translate-y-px disabled:opacity-50 disabled:pointer-events-none cursor-pointer",
     size === "sm" ? "h-7 px-2.5 text-[12.5px]" : "h-[34px] px-3.5 text-[13.5px]",
     BTN[variant],
   );
@@ -71,10 +71,10 @@ export function PageHeader({ title, meta, actions, back }: { title: ReactNode; m
 }
 
 export function Section({
-  title, actions, children, className, flush, note,
-}: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; flush?: boolean; note?: ReactNode }) {
+  title, actions, children, className, flush, note, id,
+}: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; flush?: boolean; note?: ReactNode; id?: string }) {
   return (
-    <section className={cx("bg-sheet border border-rule rounded-[3px]", className)}>
+    <section id={id} className={cx("bg-sheet border border-rule rounded-[3px] scroll-mt-32", className)}>
       {(title || actions) && (
         <div className="flex items-center justify-between gap-3 px-4 h-11 border-b border-rule">
           <h2 className="text-[13.5px] font-semibold flex items-center gap-2 min-w-0">{title}{note && <span className="font-normal text-muted text-[12.5px] truncate">{note}</span>}</h2>
@@ -96,13 +96,14 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 export function Figure({
-  label, value, sub, tone, href,
-}: { label: string; value: ReactNode; sub?: ReactNode; tone?: "red" | "green" | "amber"; href?: string }) {
+  label, value, sub, tone, href, chart,
+}: { label: string; value: ReactNode; sub?: ReactNode; tone?: "red" | "green" | "amber"; href?: string; chart?: ReactNode }) {
   const body = (
     <>
       <div className="label-caps">{label}</div>
       <div className={cx("num text-[22px] leading-tight mt-1 font-medium", tone === "red" && "text-danger", tone === "green" && "text-accent", tone === "amber" && "text-warn")}>{value}</div>
       {sub && <div className="text-[12.5px] text-muted mt-0.5">{sub}</div>}
+      {chart}
     </>
   );
   const cls = "block px-4 py-3 border-rule no-underline";

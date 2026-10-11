@@ -8,6 +8,8 @@ import { dt } from "@/lib/format";
 import { Field, FormGrid, Input, PageHeader, Section, Textarea, btn } from "@/components/ui";
 import { ActionButton, ActionForm, Submit } from "@/components/forms";
 import { SettingsTabs } from "./tabs";
+import { setupChecks } from "@/lib/setup-checks";
+import { cx } from "@/components/ui";
 import { runBackup, saveSettings } from "./actions";
 
 export const metadata = { title: "Settings" };
@@ -25,10 +27,23 @@ export default async function SettingsPage() {
   const user = await requirePage("settings.manage");
   const s = await getSettings();
   const list = await backups();
+  const checks = await setupChecks();
+  const problems = checks.filter((c) => !c.ok && c.level !== "info").length;
   return (
     <>
       <PageHeader title="Settings" />
       <SettingsTabs active="general" />
+      <Section title="Setup checks" note={problems ? `${problems} to sort out` : "all good"} className="mb-5" flush>
+        <ul className="divide-y divide-rule">
+          {checks.map((c) => (
+            <li key={c.title} className="px-4 py-2.5 flex items-start gap-3 text-[13px]">
+              <span className={cx("mt-1.5 w-2 h-2 rounded-full shrink-0", c.ok ? "bg-accent" : c.level === "red" ? "bg-danger" : c.level === "amber" ? "bg-warn" : "bg-rule-2")} aria-hidden />
+              <span className="font-medium w-[220px] shrink-0">{c.title}</span>
+              <span className={cx(!c.ok && c.level === "red" ? "text-danger" : !c.ok && c.level === "amber" ? "text-warn" : "text-muted")}>{c.detail}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <ActionForm action={saveSettings} reset={false} className="space-y-5">
           <Section title="Company (printed on receipts)">

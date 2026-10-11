@@ -11,6 +11,7 @@ import { parseDateInput } from "@/lib/dates";
 import { getSettings, num } from "@/lib/settings";
 import { nextCandidateCode, nextReceiptNo, shareToken } from "@/lib/numbering";
 import { saveUpload } from "@/lib/upload";
+import { normalizePhone, phoneTail } from "@/lib/phone";
 import { money, round2 } from "@/lib/format";
 import {
   CALL_OUTCOMES, CANDIDATE_STATUS, CLOSED_STATUSES, LEAD_SOURCES, PAYMENT_METHODS, REFUSABLE_STAGES, STAGE_LABEL,
@@ -31,12 +32,13 @@ function candidateFields(fd: FormData) {
   const sourcePartnerId = optStr(fd, "sourcePartnerId");
   if (leadSource === "CAMPAIGN" && !campaignId) throw new Error("Pick the campaign this lead came from.");
   if (leadSource === "PARTNER" && !sourcePartnerId) throw new Error("Pick the partner who sent this candidate.");
-  const phone = need(fd, "phone", "Phone");
+  const phone = normalizePhone(need(fd, "phone", "Phone"));
   if (phone.replace(/\D/g, "").length < 8) throw new Error("Phone number looks too short. Include the country code.");
+  const whatsapp = optStr(fd, "whatsapp");
   return {
     fullName: need(fd, "fullName", "Full name"),
     phone,
-    whatsapp: optStr(fd, "whatsapp"),
+    whatsapp: whatsapp ? normalizePhone(whatsapp) : null,
     email: optStr(fd, "email"),
     gender: optStr(fd, "gender"),
     dateOfBirth: parseDateInput(fd.get("dateOfBirth")),
@@ -63,7 +65,7 @@ export async function createCandidate(fd: FormData) {
     const user = await requirePerm("candidate.edit");
     const data = candidateFields(fd);
     const dup = await db.candidate.findFirst({
-      where: { OR: [{ phone: data.phone }, ...(data.passportNo ? [{ passportNo: data.passportNo }] : [])] },
+      where: { OR: [{ phone: { endsWith: phoneTail(data.phone) } }, ...(data.passportNo ? [{ passportNo: data.passportNo }] : [])] },
       select: { code: true, fullName: true },
     });
     if (dup && str(fd, "allowDuplicate") !== "1")

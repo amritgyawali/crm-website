@@ -8,7 +8,7 @@ type Job = { reference: string; position: string; employer: string; partnerId: s
 
 export function JobForm({ action, partners, job, partnerId }: { action: (fd: FormData) => Promise<ActionState>; partners: { value: string; label: string }[]; job?: Job; partnerId?: string }) {
   return (
-    <ActionForm action={action} reset={false} className="space-y-4">
+    <ActionForm action={action} reset={false} guard className="space-y-4">
       <FormGrid cols={3}>
         <Field label="Reference / RRF no." required><Input name="reference" required defaultValue={job?.reference} className="uppercase num" /></Field>
         <Field label="Partner" hint="Leave empty for a direct employer"><Select name="partnerId" defaultValue={job?.partnerId ?? partnerId ?? ""} placeholder="Direct employer" options={partners} /></Field>

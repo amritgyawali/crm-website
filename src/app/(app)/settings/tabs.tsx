@@ -9,6 +9,7 @@ export function SettingsTabs({ active }: { active: string }) {
         { key: "stages", href: "/settings/stages", label: "Stage time limits" },
         { key: "users", href: "/settings/users", label: "Users & roles" },
         { key: "templates", href: "/settings/templates", label: "WhatsApp templates" },
+        { key: "duplicates", href: "/settings/duplicates", label: "Duplicates" },
         { key: "activity", href: "/settings/activity", label: "Activity log" },
       ]}
     />
