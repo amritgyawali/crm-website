@@ -17,7 +17,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   const where: Prisma.AuditLogWhereInput = {};
   if (sp.entity) where.entity = sp.entity;
   if (sp.user) where.userId = sp.user;
-  if (sp.q) where.summary = { contains: sp.q };
+  if (sp.q) where.summary = { contains: sp.q, mode: "insensitive" };
   const [rows, total, entities, users] = await Promise.all([
     db.auditLog.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * PER, take: PER, include: { user: { select: { name: true } } } }),
     db.auditLog.count({ where }),

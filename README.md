@@ -17,20 +17,23 @@ shows their calls, fee ledger, payments, refunds, documents and visa progress to
 | **Call logging** | One-tap Call / WhatsApp, outcome buttons, next-call date picked automatically — two taps to log. Daily call list per staff member (new leads, call-backs, payment follow-ups), alert for leads not contacted in N days, daily and monthly counts. |
 | **Campaigns** | Campaign records with spend; compulsory lead source on every candidate; report of leads, enrolled (paid first installment), deployed, cost per enrolment and money collected. `/api/leads` endpoint for Facebook/Instagram lead forms. |
 | **Office expenses** | Recurring bills (rent, DEWA, internet, phones, software, licences) — paying one creates the next. One-time expenses with photo/PDF receipt and approval. Bills due in 7 / 30 days and overdue. Monthly income minus costs. |
-| **Office** | Attendance with self check-in, payroll calculated from attendance and approved before payment, monthly targets with live progress, staff performance record, management dashboard, reminders page, WhatsApp templates, role-based logins, activity log, Excel/CSV exports, printable PDFs, daily backup. |
+| **Office** | Attendance with self check-in, payroll calculated from attendance and approved before payment, monthly targets with live progress, staff performance record, management dashboard, reminders page, WhatsApp templates, role-based logins, activity log, Excel/CSV exports, printable PDFs. |
 | **Tools** | Ctrl+K search across candidates, partners, job orders, campaigns and receipts. Office calendar (fees due, call-backs, embassy appointments, flights, check-ins, bills, expiries). Insights: conversion funnel by source and staff, speed to first call, fees owed by age, 8-week collection forecast. WhatsApp sending queue with a per-candidate message log. Passport fill from the machine-readable lines (check digits verified) or a photo. Duplicate finder with merge. Facebook/Instagram Lead Ads webhook. Installable on phones. |
 | **Working faster** | Quick views on the candidate list (fees overdue, due this week, call-backs, not contacted, no staff, passport expiring), sortable columns, bulk assign, one-tap WhatsApp payment reminders with the amount and date filled in, Excel/CSV import, visa board view, keyboard shortcuts, sign-in attempt limit, change-your-own-password. |
 
 ## Run it locally
 
-Requires Node.js 20+.
+Requires Node.js 20+ and a PostgreSQL database (a local server, Docker, or a free Neon / Supabase database).
 
 ```bash
 npm install
-cp .env.example .env      # Windows: copy .env.example .env   — then set SESSION_SECRET to a long random string
-npm run setup             # creates the database and loads demo data
+cp .env.example .env      # Windows: copy .env.example .env   — then set DATABASE_URL and SESSION_SECRET
+npm run setup             # creates the tables and loads demo data
 npm run dev               # http://localhost:3000
 ```
+
+No Postgres installed? `docker run -d --name crm-db -e POSTGRES_PASSWORD=crm -e POSTGRES_DB=crm -p 5432:5432 postgres:16`
+and use `DATABASE_URL="postgresql://postgres:crm@localhost:5432/crm"`.
 
 Demo logins (password `office123` for all):
 
@@ -73,19 +76,52 @@ saved as named views, and on phones the candidate list shows cards with filters 
 - **Sales** — their own candidates and call list, record payments, see campaigns.
 - **Operations** — visa stages, documents, job orders, partners.
 
-## Production
+## Deploy on Vercel
+
+The app is ready to deploy on Vercel as it is. It needs a hosted PostgreSQL database because Vercel has no
+writable disk — records **and** uploaded files are stored in the database.
+
+1. **Create a database.** In Vercel: *Storage → Create → Neon (Postgres)*, or use Supabase / any PostgreSQL host.
+2. **Import the repository** in Vercel (*Add New → Project*). The build command is picked up from `package.json`
+   (`vercel-build`), nothing to configure.
+3. **Add environment variables** (*Project → Settings → Environment Variables*) before the first deploy:
+
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_URL` | The PostgreSQL connection string (the Neon integration adds it for you). |
+   | `SESSION_SECRET` | A long random text, 32+ characters. `openssl rand -base64 48` makes one. |
+   | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Your first login (password 8+ characters). Optional `ADMIN_NAME`. |
+   | `OFFICE_TIMEZONE` | Optional, e.g. `Asia/Dubai` (the default). |
+   | `LEADS_API_KEY`, `META_*`, `ANTHROPIC_API_KEY` | Optional, see below. |
+
+4. **Deploy.** Every build creates or updates the database tables (`prisma migrate deploy`) and, only while there
+   are no users yet, creates the admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Later deploys never change passwords.
+   You can remove `ADMIN_PASSWORD` from Vercel once you have signed in.
+
+Good to know:
+
+- If your host gives a pooled and a direct connection string, keep the pooled one in `DATABASE_URL`. Set the direct
+  one as `DIRECT_URL` (Neon's `DATABASE_URL_UNPOOLED` and Supabase's `POSTGRES_URL_NON_POOLING` are picked up
+  automatically) — migrations use it.
+- Preview deployments also run the migrations against their `DATABASE_URL`. Give *Preview* its own database
+  (or leave it unset) so a branch can't change the production tables.
+- Uploads are limited to 4 MB on Vercel (its request-size limit); elsewhere 10 MB.
+- Backups are your database host's job (Neon/Supabase point-in-time restore). Excel/CSV exports are under *Reports & export*.
+- Start without demo data: don't run the seed. To load demo data into a *test* database, run
+  `DATABASE_URL=<test db> npm run setup` locally.
+
+## Production on your own server
 
 ```bash
 npm run build
 npm start
 ```
 
-- Set `SESSION_SECRET`, `DATABASE_URL` and `LEADS_API_KEY` in the environment.
-- Uploaded files are stored in `./uploads` and served only to signed-in staff — keep this folder on persistent disk.
-- SQLite suits a single office server. For hosted/multi-server setups change `provider` in
-  `prisma/schema.prisma` to `postgresql` and point `DATABASE_URL` at the database.
+- Set `SESSION_SECRET`, `DATABASE_URL` (PostgreSQL) and `LEADS_API_KEY` in the environment, and run
+  `npm run db:migrate` once (and after each update) to create/update the tables.
+- Uploaded files are stored in the database, so nothing but the database needs to be kept safe and backed up.
 - "Today" lists and month totals follow `OFFICE_TIMEZONE` (default `Asia/Dubai`), wherever the server is hosted.
-- **Settings → Setup checks** lists anything still to do before real use (secret key, demo logins, company details, backups).
+- **Settings → Setup checks** lists anything still to do before real use (secret key, demo logins, company details).
 
 ### Using it from other office computers and phones
 
@@ -100,15 +136,6 @@ Set `ANTHROPIC_API_KEY` to show an "Upload photo" button on the candidate form. 
 Anthropic's API (model `claude-opus-5-5`), read, and the form is filled for staff to check; the CRM does not
 store the photo. Without a key, staff can still paste the two lines from the bottom of the passport page —
 those are read and checked locally.
-
-### Daily backup
-
-```bash
-# crontab -e
-30 23 * * * cd /srv/crm && npm run backup
-```
-
-Keeps the latest 30 copies in `./backups`. Management can also download a copy from **Settings**.
 
 ### Lead forms (Facebook / Instagram)
 
@@ -129,4 +156,4 @@ Put the ad ID or lead form ID on the campaign so leads are credited to it.
 
 ## Tech
 
-Next.js 15 (App Router, server actions) · React 19 · TypeScript · Tailwind CSS 4 · Prisma 6 · SQLite · ExcelJS.
+Next.js 15 (App Router, server actions) · React 19 · TypeScript · Tailwind CSS 4 · Prisma 6 · PostgreSQL · ExcelJS.

@@ -1,7 +1,4 @@
-import { readdir, stat } from "fs/promises";
-import path from "path";
 import { db } from "./db";
-import { BACKUP_DIR } from "./backup";
 import { getSettings } from "./settings";
 import { SETTING_DEFAULTS } from "./constants";
 
@@ -12,24 +9,13 @@ export async function setupChecks(): Promise<Check[]> {
   const s = await getSettings();
   const secret = process.env.SESSION_SECRET ?? "";
   const demoUsers = await db.user.count({ where: { email: { endsWith: "@office.test" }, active: true } });
-  let lastBackup: Date | null = null;
-  try {
-    const files = (await readdir(BACKUP_DIR)).filter((f) => f.endsWith(".db"));
-    for (const f of files) {
-      const m = (await stat(path.join(BACKUP_DIR, f))).mtime;
-      if (!lastBackup || m > lastBackup) lastBackup = m;
-    }
-  } catch {
-    /* no backups folder yet */
-  }
-  const backupAgeH = lastBackup ? (Date.now() - lastBackup.getTime()) / 36e5 : Infinity;
   const leadsKey = process.env.LEADS_API_KEY ?? "";
 
   return [
     {
       ok: secret.length >= 32 && !secret.startsWith("change-me"), level: "red",
       title: "Sign-in secret key",
-      detail: secret.startsWith("change-me") ? "SESSION_SECRET is still the example value. Set a long random value in .env and restart." : secret.length < 32 ? "SESSION_SECRET is shorter than 32 characters." : "Set.",
+      detail: secret.startsWith("change-me") ? "SESSION_SECRET is still the example value. Set a long random value in the environment and redeploy / restart." : secret.length < 32 ? "SESSION_SECRET is shorter than 32 characters." : "Set.",
     },
     {
       ok: demoUsers === 0, level: "red",
@@ -42,11 +28,11 @@ export async function setupChecks(): Promise<Check[]> {
       detail: s.companyName === SETTING_DEFAULTS.companyName || s.companyName === "Recruitment Office" ? "The company name is still the placeholder. Fill in the details below." : `Receipts print as “${s.companyName}”.`,
     },
     {
-      ok: backupAgeH < 48, level: "amber",
+      ok: true, level: "info",
       title: "Backups",
-      detail: lastBackup ? `Last backup ${Math.round(backupAgeH)} hours ago${backupAgeH >= 48 ? ". Schedule npm run backup nightly." : "."}` : "No backup yet. Schedule npm run backup nightly, or use Back up now.",
+      detail: "Kept by your database host. Check that automatic backups or point-in-time restore are on in its dashboard.",
     },
-    { ok: true, level: "info", title: "Office time zone", detail: `${process.env.TZ ?? "server default"}. “Today” and month totals follow this clock (OFFICE_TIMEZONE in .env).` },
+    { ok: true, level: "info", title: "Office time zone", detail: `${process.env.TZ ?? "server default"}. “Today” and month totals follow this clock (OFFICE_TIMEZONE).` },
     {
       ok: !!leadsKey && !leadsKey.startsWith("change-me"), level: "info",
       title: "Lead intake (Zapier / Make)",

@@ -48,9 +48,9 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
   if (sp.q) {
     const q = sp.q.trim();
     and.push({ OR: [
-      { fullName: { contains: q } }, { passportNo: { contains: q.toUpperCase() } },
+      { fullName: { contains: q, mode: "insensitive" } }, { passportNo: { contains: q.toUpperCase() } },
       ...(q.replace(/\D/g, "").length >= 4 ? [{ phone: { contains: q.replace(/\D/g, "").replace(/^0+/, "") } }] : []),
-      { code: { contains: q.toUpperCase() } }, { email: { contains: q } },
+      { code: { contains: q.toUpperCase() } }, { email: { contains: q, mode: "insensitive" } },
     ] });
   }
   if (sp.status === "OPEN") where.status = { in: ["LEAD", "CONTACTED", "INTERESTED", "ENROLLED", "IN_PROCESS"] };

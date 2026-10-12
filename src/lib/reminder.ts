@@ -7,7 +7,7 @@ const FALLBACK =
 
 /** Returns a function that builds the WhatsApp payment reminder text for one installment. */
 export async function reminderWriter(staffName: string) {
-  const [s, tpl] = await Promise.all([getSettings(), db.messageTemplate.findFirst({ where: { audience: "CANDIDATE", name: { contains: "reminder" } } })]);
+  const [s, tpl] = await Promise.all([getSettings(), db.messageTemplate.findFirst({ where: { audience: "CANDIDATE", name: { contains: "reminder", mode: "insensitive" } } })]);
   const body = tpl?.body ?? FALLBACK;
   return (x: { name: string; label: string; outstanding: number; dueDate: Date | null; balance: number }) =>
     fillTemplate(body, {

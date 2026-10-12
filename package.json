@@ -5,16 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "vercel-build": "prisma generate && node scripts/migrate.mjs && tsx scripts/create-admin.ts --from-env && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "db:push": "prisma db push",
+    "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma db push --force-reset && prisma db seed",
-    "backup": "tsx scripts/backup.ts",
-    "setup": "prisma db push && prisma db seed",
+    "db:reset": "prisma migrate reset --force",
+    "setup": "node scripts/migrate.mjs && prisma db seed",
     "create-admin": "tsx scripts/create-admin.ts",
-    "setup:empty": "prisma db push && tsx scripts/create-admin.ts"
+    "setup:empty": "node scripts/migrate.mjs && tsx scripts/create-admin.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
