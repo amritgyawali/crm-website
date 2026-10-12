@@ -1,13 +1,15 @@
 // Recruitment office CRM
-// SQLite for local/single-office use. Switch provider to "postgresql" for a hosted setup.
+// PostgreSQL (Neon, Supabase, Vercel Postgres, a local server...). Serverless hosts such as Vercel
+// have no writable disk, so both the data and the uploaded files live in the database.
 // String "enum" values are listed in src/lib/constants.ts.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"] // rhel-openssl-3.0.x = Vercel's runtime
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -516,4 +518,14 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@index([createdAt])
+}
+
+// Uploaded documents and receipts. Kept in the database because serverless hosts can't keep files on disk.
+// `key` is the path after /api/files/, e.g. candidates/<id>/2026-10/ab12cd-passport.pdf.
+model StoredFile {
+  key         String   @id
+  contentType String
+  size        Int
+  data        Bytes
+  createdAt   DateTime @default(now())
 }

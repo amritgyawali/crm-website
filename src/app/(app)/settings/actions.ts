@@ -6,7 +6,6 @@ import { requirePerm } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { need, optNum, optStr, run, str } from "@/lib/action";
 import { DEFAULT_STAGE_DAYS, ROLES, SETTING_DEFAULTS, STAGE_ORDER, type SettingKey } from "@/lib/constants";
-import { makeBackup } from "@/lib/backup";
 
 export async function saveSettings(fd: FormData) {
   return run(async () => {
@@ -75,14 +74,5 @@ export async function deleteTemplate(id: string) {
   return run(async () => {
     await requirePerm("settings.manage");
     await db.messageTemplate.delete({ where: { id } });
-  });
-}
-
-export async function runBackup() {
-  return run(async () => {
-    const user = await requirePerm("backup.download");
-    const b = await makeBackup();
-    await audit({ userId: user.id, action: "CREATE", entity: "Backup", summary: `Backup saved on server (${Math.round(b.size / 1024)} KB)` });
-    return "Backup saved on the server.";
   });
 }

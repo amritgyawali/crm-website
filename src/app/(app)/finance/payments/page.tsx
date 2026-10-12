@@ -24,7 +24,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
   const where: Prisma.PaymentWhereInput = { date: { gte: from, lte: endOfDay(to) } };
   if (sp.method) where.method = sp.method;
   if (sp.staff) where.receivedById = sp.staff;
-  if (sp.q) where.OR = [{ receiptNo: { contains: sp.q.toUpperCase() } }, { reference: { contains: sp.q } }, { candidate: { fullName: { contains: sp.q } } }];
+  if (sp.q) where.OR = [{ receiptNo: { contains: sp.q.toUpperCase() } }, { reference: { contains: sp.q, mode: "insensitive" } }, { candidate: { fullName: { contains: sp.q, mode: "insensitive" } } }];
 
   const [rows, agg, staff] = await Promise.all([
     db.payment.findMany({
