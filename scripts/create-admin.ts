@@ -27,6 +27,7 @@ const TEMPLATES = [
 async function main() {
   const fromEnv = process.argv.includes("--from-env");
   if (fromEnv) {
+    if (!process.env.DATABASE_URL) return console.log("DATABASE_URL not set: skipping first-admin setup.");
     if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) return console.log("ADMIN_EMAIL / ADMIN_PASSWORD not set: skipping first-admin setup.");
     if ((await db.user.count()) > 0) return console.log("Users already exist: skipping first-admin setup.");
   }

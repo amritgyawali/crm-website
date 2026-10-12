@@ -10,6 +10,13 @@ import { spawnSync } from "node:child_process";
 const direct = process.env.DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING;
 const env = { ...process.env, ...(direct ? { DATABASE_URL: direct } : {}) };
 
+if (!env.DATABASE_URL && process.env.VERCEL_ENV === "preview") {
+  // Preview builds may legitimately have no database (README: give Preview its own database "or leave it unset").
+  // Production still fails below: deploying without tables would give a site that errors on every page.
+  console.warn("\nDATABASE_URL is not set for this Preview deployment: skipping database migrations.\nThe deployed pages that need data will not work until Preview gets its own DATABASE_URL.\n");
+  process.exit(0);
+}
+
 if (!env.DATABASE_URL) {
   console.error(
     "\nDATABASE_URL is not set, so the database tables can't be created.\n" +

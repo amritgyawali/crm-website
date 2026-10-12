@@ -104,7 +104,8 @@ Good to know:
   one as `DIRECT_URL` (Neon's `DATABASE_URL_UNPOOLED` and Supabase's `POSTGRES_URL_NON_POOLING` are picked up
   automatically) — migrations use it.
 - Preview deployments also run the migrations against their `DATABASE_URL`. Give *Preview* its own database
-  (or leave it unset) so a branch can't change the production tables.
+  (or leave it unset: the build then skips the migrations and the preview has no data) so a branch can't change
+  the production tables. A *Production* build without `DATABASE_URL` fails on purpose, with a message saying so.
 - Uploads are limited to 4 MB on Vercel (its request-size limit); elsewhere 10 MB.
 - Backups are your database host's job (Neon/Supabase point-in-time restore). Excel/CSV exports are under *Reports & export*.
 - Start without demo data: don't run the seed. To load demo data into a *test* database, run
