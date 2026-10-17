@@ -1,32 +1,18 @@
-import { readdir, stat } from "fs/promises";
-import path from "path";
 import { requirePage } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { getSettings } from "@/lib/settings";
-import { BACKUP_DIR } from "@/lib/backup";
-import { dt } from "@/lib/format";
-import { Field, FormGrid, Input, PageHeader, Section, Textarea, btn } from "@/components/ui";
-import { ActionButton, ActionForm, Submit } from "@/components/forms";
+import { Field, FormGrid, Input, PageHeader, Section, Textarea } from "@/components/ui";
+import { ActionForm, Submit } from "@/components/forms";
 import { SettingsTabs } from "./tabs";
 import { setupChecks } from "@/lib/setup-checks";
 import { cx } from "@/components/ui";
-import { runBackup, saveSettings } from "./actions";
+import { saveSettings } from "./actions";
 
 export const metadata = { title: "Settings" };
-
-async function backups() {
-  try {
-    const files = (await readdir(BACKUP_DIR)).filter((f) => f.endsWith(".db")).sort().reverse().slice(0, 5);
-    return Promise.all(files.map(async (f) => ({ f, s: await stat(path.join(BACKUP_DIR, f)) })));
-  } catch {
-    return [];
-  }
-}
 
 export default async function SettingsPage() {
   const user = await requirePage("settings.manage");
   const s = await getSettings();
-  const list = await backups();
   const checks = await setupChecks();
   const problems = checks.filter((c) => !c.ok && c.level !== "info").length;
   return (
@@ -73,19 +59,11 @@ export default async function SettingsPage() {
 
         {can(user.role, "backup.download") && (
           <Section title="Backup">
-            <p className="text-[13px] text-ink-2">Run <code className="num bg-well px-1">npm run backup</code> every night from the server&apos;s scheduler (cron) to keep 30 days of copies. You can also make one now.</p>
-            <div className="flex gap-2 mt-3">
-              <ActionButton action={runBackup} size="md">Back up now</ActionButton>
-              <a className={btn("secondary")} href="/api/backup">Download a copy</a>
-            </div>
-            <div className="mt-4">
-              <div className="label-caps mb-1">Latest on server</div>
-              {list.length === 0 ? <p className="text-[13px] text-muted">No backups yet.</p> : (
-                <ul className="text-[12.5px] space-y-1">
-                  {list.map((b) => <li key={b.f} className="flex justify-between"><span className="num">{b.f}</span><span className="text-muted">{dt(b.s.mtime)}</span></li>)}
-                </ul>
-              )}
-            </div>
+            <p className="text-[13px] text-ink-2">
+              All records and uploaded files live in your PostgreSQL database, so backups are done by the database host
+              (Neon, Supabase, …). Check in its dashboard that automatic backups or point-in-time restore are switched on.
+            </p>
+            <p className="text-[13px] text-muted mt-2">Spreadsheet exports of the main lists are under Reports &amp; export.</p>
           </Section>
         )}
       </div>

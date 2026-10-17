@@ -1,13 +1,21 @@
+import { redirect } from "next/navigation";
 import { ActionForm, Submit } from "@/components/forms";
 import { Field, Input } from "@/components/ui";
+import { db } from "@/lib/db";
+import { demoMode } from "@/lib/database-url";
 import { getSettings } from "@/lib/settings";
+import { sessionSecretOk } from "@/lib/setup-status";
 import { login } from "./actions";
 
 export const metadata = { title: "Sign in" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const { next } = await searchParams;
-  const s = await getSettings();
+  // Missing database, tables, first login or secret key: explain on /setup instead of crashing here.
+  const s = await getSettings().catch(() => null);
+  const anyUser = s && (await db.user.findFirst({ select: { id: true } }).catch(() => null));
+  if (!s || !anyUser || !sessionSecretOk()) redirect("/setup");
+  const demo = demoMode();
   const year = new Date().getFullYear();
   return (
     <main className="min-h-screen grid lg:grid-cols-[1fr_440px]">
@@ -27,13 +35,19 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <div className="lg:hidden font-serif text-[20px] font-semibold mb-8">{s.companyName}</div>
           <h1 className="text-[20px] font-semibold">Staff sign-in</h1>
           <p className="text-[13px] text-muted mt-1 mb-6">Use the email your manager set up for you.</p>
+          {demo && (
+            <div role="note" className="mb-6 rounded-[3px] bg-warn-tint text-warn text-[12.5px] leading-relaxed p-3">
+              <strong className="font-semibold">Demo mode</strong>: sample data, nothing is kept. Every demo login uses the
+              password <span className="num">office123</span>: admin@office.test, manager@, finance@, ops@, sunita@office.test.
+            </div>
+          )}
           <ActionForm action={login} reset={false} className="space-y-4">
             <input type="hidden" name="next" value={next ?? ""} />
             <Field label="Email">
-              <Input name="email" type="email" autoComplete="username" required autoFocus />
+              <Input name="email" type="email" autoComplete="username" required autoFocus defaultValue={demo ? "admin@office.test" : undefined} />
             </Field>
             <Field label="Password">
-              <Input name="password" type="password" autoComplete="current-password" required />
+              <Input name="password" type="password" autoComplete="current-password" required defaultValue={demo ? "office123" : undefined} />
             </Field>
             <Submit className="w-full">Sign in</Submit>
           </ActionForm>

@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
     db.candidate.findMany({
       where: {
         OR: [
-          { fullName: { contains: q } }, { code: { contains: q.toUpperCase() } }, { passportNo: { contains: q.toUpperCase() } },
-          { email: { contains: q } },
+          { fullName: { contains: q, mode: "insensitive" } }, { code: { contains: q.toUpperCase() } }, { passportNo: { contains: q.toUpperCase() } },
+          { email: { contains: q, mode: "insensitive" } },
           ...(digits.length >= 4 ? [{ phone: { contains: digits } }, { whatsapp: { contains: digits } }] : []),
           // local format 050… matches the stored +97150…
           ...(digits.length >= 5 && digits.startsWith("0") ? [{ phone: { contains: digits.replace(/^0+/, "") } }] : []),
@@ -30,11 +30,11 @@ export async function GET(req: NextRequest) {
       take: 8, orderBy: { updatedAt: "desc" },
       select: { id: true, fullName: true, code: true, status: true, phone: true, jobOrder: { select: { position: true, country: true } } },
     }),
-    db.partner.findMany({ where: { OR: [{ name: { contains: q } }, { country: { contains: q } }, { contacts: { some: { name: { contains: q } } } }] }, take: 5, select: { id: true, name: true, country: true } }),
-    db.jobOrder.findMany({ where: { OR: [{ reference: { contains: q.toUpperCase() } }, { position: { contains: q } }, { employer: { contains: q } }] }, take: 5, select: { id: true, reference: true, position: true, country: true, status: true } }),
-    can(r, "campaigns.view") ? db.campaign.findMany({ where: { name: { contains: q } }, take: 4, select: { id: true, name: true, platform: true } }) : Promise.resolve([]),
+    db.partner.findMany({ where: { OR: [{ name: { contains: q, mode: "insensitive" } }, { country: { contains: q, mode: "insensitive" } }, { contacts: { some: { name: { contains: q, mode: "insensitive" } } } }] }, take: 5, select: { id: true, name: true, country: true } }),
+    db.jobOrder.findMany({ where: { OR: [{ reference: { contains: q.toUpperCase() } }, { position: { contains: q, mode: "insensitive" } }, { employer: { contains: q, mode: "insensitive" } }] }, take: 5, select: { id: true, reference: true, position: true, country: true, status: true } }),
+    can(r, "campaigns.view") ? db.campaign.findMany({ where: { name: { contains: q, mode: "insensitive" } }, take: 4, select: { id: true, name: true, platform: true } }) : Promise.resolve([]),
     can(r, "payment.record") && /\d/.test(q)
-      ? db.payment.findMany({ where: { OR: [{ receiptNo: { contains: q.toUpperCase() } }, { reference: { contains: q } }] }, take: 4, include: { candidate: { select: { fullName: true } } } })
+      ? db.payment.findMany({ where: { OR: [{ receiptNo: { contains: q.toUpperCase() } }, { reference: { contains: q, mode: "insensitive" } }] }, take: 4, include: { candidate: { select: { fullName: true } } } })
       : Promise.resolve([]),
   ]);
 

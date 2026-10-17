@@ -11,6 +11,7 @@ import { getSettings } from "@/lib/settings";
 import { getAlerts, alertCount } from "@/lib/alerts";
 import { ROLE_LABEL, type Role } from "@/lib/constants";
 import { Sidebar, type NavGroup } from "@/components/sidebar";
+import { DemoBanner } from "@/components/demo-banner";
 import { Shortcuts } from "@/components/shortcuts";
 import { CommandPalette, PaletteButton } from "@/components/command-palette";
 import { logout } from "../login/actions";
@@ -102,6 +103,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <CommandPalette pages={pages} />
       <Sidebar groups={groups} company={s.companyName} footer={footer} />
       <div className="flex-1 min-w-0">
+        <DemoBanner />
         <div className="no-print hidden lg:flex items-center justify-between gap-4 h-14 px-8 border-b border-rule bg-paper/95 sticky top-0 z-10 backdrop-blur-[2px]">
           <form action="/candidates" className="w-full max-w-[420px]">
             <div className="relative">

@@ -2,12 +2,17 @@
    Use it to start a clean system without demo data:
      npm run setup:empty -- --email you@company.com --name "Your Name" --password "a-long-password"
    or later, to reset a forgotten admin password:
-     npm run create-admin -- --email you@company.com --password "new-password" */
+     npm run create-admin -- --email you@company.com --password "new-password"
+   On Vercel it runs with --from-env at every build: it reads ADMIN_EMAIL / ADMIN_PASSWORD / ADMIN_NAME and
+   creates the first admin only while the database has no users, so later deploys never touch passwords. */
+import "dotenv/config"; // Prisma skips .env when prisma.config.ts exists, so load it here
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { DEFAULT_STAGE_DAYS } from "../src/lib/constants";
+import { databaseUrl } from "../src/lib/database-url";
 
-const db = new PrismaClient();
+const url = databaseUrl();
+const db = new PrismaClient(url ? { datasourceUrl: url } : undefined);
 const arg = (k: string) => {
   const i = process.argv.indexOf(`--${k}`);
   return i > -1 ? process.argv[i + 1] : undefined;
@@ -22,9 +27,15 @@ const TEMPLATES = [
 ];
 
 async function main() {
-  const email = arg("email")?.toLowerCase();
-  const password = arg("password");
-  const name = arg("name") ?? "Office Admin";
+  const fromEnv = process.argv.includes("--from-env");
+  if (fromEnv) {
+    if (!url) return console.log("No database connected: skipping first-admin setup.");
+    if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) return console.log("ADMIN_EMAIL / ADMIN_PASSWORD not set: skipping first-admin setup.");
+    if ((await db.user.count()) > 0) return console.log("Users already exist: skipping first-admin setup.");
+  }
+  const email = (fromEnv ? process.env.ADMIN_EMAIL : arg("email"))?.toLowerCase();
+  const password = fromEnv ? process.env.ADMIN_PASSWORD : arg("password");
+  const name = (fromEnv ? process.env.ADMIN_NAME : arg("name")) ?? "Office Admin";
   if (!email || !password) throw new Error('Usage: npm run create-admin -- --email you@company.com --password "..." [--name "Your Name"]');
   if (password.length < 8) throw new Error("Password must be at least 8 characters.");
 

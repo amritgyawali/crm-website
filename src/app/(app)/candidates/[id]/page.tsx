@@ -23,6 +23,7 @@ import { OutcomeTag, RefundTag, StageTag, StatusTag } from "@/components/tags";
 import { TemplatePicker } from "@/components/template-picker";
 import { CallLogger } from "./call-logger";
 import { StickyBar } from "@/components/sticky-bar";
+import { MAX_UPLOAD_LABEL } from "@/lib/upload";
 import { TrackRecent } from "@/components/recent";
 import { StageForm } from "./stage-form";
 import {
@@ -496,7 +497,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
               <div className="p-4 border-t border-rule">
                 <ActionForm action={uploadDocument.bind(null, c.id)} className="grid gap-3 sm:grid-cols-[150px_1fr_150px_auto] items-end">
                   <Field label="Type"><Select name="kind" options={DOCUMENT_KINDS} /></Field>
-                  <Field label="File (PDF or photo, 10 MB max)"><Input name="file" type="file" accept=".pdf,image/*" required /></Field>
+                  <Field label={`File (PDF or photo, ${MAX_UPLOAD_LABEL} max)`}><Input name="file" type="file" accept=".pdf,image/*" required /></Field>
                   <Field label="Expiry date"><Input name="expiresOn" type="date" /></Field>
                   <Submit>Upload</Submit>
                 </ActionForm>

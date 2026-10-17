@@ -45,4 +45,5 @@ next-env.d.ts
 /prisma/*.db-journal
 /uploads/
 /backups/
+/.demo/
 !.env.example
