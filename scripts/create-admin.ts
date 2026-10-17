@@ -9,8 +9,10 @@ import "dotenv/config"; // Prisma skips .env when prisma.config.ts exists, so lo
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { DEFAULT_STAGE_DAYS } from "../src/lib/constants";
+import { databaseUrl } from "../src/lib/database-url";
 
-const db = new PrismaClient();
+const url = databaseUrl();
+const db = new PrismaClient(url ? { datasourceUrl: url } : undefined);
 const arg = (k: string) => {
   const i = process.argv.indexOf(`--${k}`);
   return i > -1 ? process.argv[i + 1] : undefined;
@@ -27,6 +29,7 @@ const TEMPLATES = [
 async function main() {
   const fromEnv = process.argv.includes("--from-env");
   if (fromEnv) {
+    if (!url) return console.log("No database connected: skipping first-admin setup.");
     if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) return console.log("ADMIN_EMAIL / ADMIN_PASSWORD not set: skipping first-admin setup.");
     if ((await db.user.count()) > 0) return console.log("Users already exist: skipping first-admin setup.");
   }
