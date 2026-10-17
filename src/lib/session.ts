@@ -1,12 +1,24 @@
 // Edge-safe session helpers (used by middleware and server code).
 import { SignJWT, jwtVerify } from "jose";
+import { demoMode } from "./database-url";
 
 export const SESSION_COOKIE = "crm_session";
 const MAX_AGE = 60 * 60 * 12; // one working day
 
-function key() {
+// Demo mode only (sample data, public demo passwords), so a fixed key is fine there.
+// With a real database SESSION_SECRET is required: /setup says so until it is set.
+const DEMO_SECRET = "demo-mode-sample-data-only-not-a-secret";
+
+/** The signing key in use, or undefined when none is usable. */
+export function sessionSecret() {
   const secret = process.env.SESSION_SECRET;
-  if (!secret || secret.length < 16) throw new Error("SESSION_SECRET is missing or too short");
+  if (secret && secret.length >= 16) return secret;
+  return demoMode() ? DEMO_SECRET : undefined;
+}
+
+function key() {
+  const secret = sessionSecret();
+  if (!secret) throw new Error("SESSION_SECRET is missing or too short");
   return new TextEncoder().encode(secret);
 }
 

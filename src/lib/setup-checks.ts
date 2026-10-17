@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { getSettings } from "./settings";
 import { SETTING_DEFAULTS } from "./constants";
+import { demoMode } from "./database-url";
 
 export type Check = { ok: boolean; level: "red" | "amber" | "info"; title: string; detail: string };
 
@@ -12,6 +13,11 @@ export async function setupChecks(): Promise<Check[]> {
   const leadsKey = process.env.LEADS_API_KEY ?? "";
 
   return [
+    {
+      ok: !demoMode(), level: "red",
+      title: "Database",
+      detail: demoMode() ? "Not connected: demo mode, on sample data that resets when the server restarts. Nothing entered here is kept. See /setup to connect one." : "Connected.",
+    },
     {
       ok: secret.length >= 32 && !secret.startsWith("change-me"), level: "red",
       title: "Sign-in secret key",

@@ -33,7 +33,8 @@ npm run dev               # http://localhost:3000
 ```
 
 No Postgres installed? `docker run -d --name crm-db -e POSTGRES_PASSWORD=crm -e POSTGRES_DB=crm -p 5432:5432 postgres:16`
-and use `DATABASE_URL="postgresql://postgres:crm@localhost:5432/crm"`.
+and use `DATABASE_URL="postgresql://postgres:crm@localhost:5432/crm"`. Or just look around first: without a
+`DATABASE_URL`, `npm run dev` starts in [demo mode](#demo-mode-no-database).
 
 Demo logins (password `office123` for all):
 
@@ -78,34 +79,50 @@ saved as named views, and on phones the candidate list shows cards with filters 
 
 ## Deploy on Vercel
 
-The app is ready to deploy on Vercel as it is. It needs a hosted PostgreSQL database because Vercel has no
-writable disk — records **and** uploaded files are stored in the database.
+Import the repository in Vercel (*Add New → Project*) and deploy. Nothing needs configuring: the build command is
+picked up from `package.json` (`vercel-build`). Without a database the site runs in demo mode (below); connect one
+when you are ready to keep real records. Vercel has no writable disk, so records **and** uploaded files are stored
+in the database.
 
-1. **Create a database.** In Vercel: *Storage → Create → Neon (Postgres)*, or use Supabase / any PostgreSQL host.
-2. **Import the repository** in Vercel (*Add New → Project*). The build command is picked up from `package.json`
-   (`vercel-build`), nothing to configure.
-3. **Add environment variables** (*Project → Settings → Environment Variables*) before the first deploy:
+### Demo mode (no database)
+
+While no database is connected, the app runs on built-in sample data: an in-memory PostgreSQL
+([PGlite](https://pglite.dev)) inside the server, filled with the same demo data as `npm run setup`. Sign in with any
+demo login (password `office123`, e.g. `admin@office.test`). Everything works, but **nothing is kept**: changes reset
+whenever the server restarts, and on Vercel separate server instances can each show their own copy. A yellow bar on
+every page says so. The build saves the sample database once (`scripts/demo-snapshot.ts`) so a server starts in about a
+second. Demo mode switches off by itself on the first deploy that has a database connection string.
+
+### Connect a database
+
+1. **Create the database.** In Vercel: *Project → Storage → Create Database*, pick **Supabase** or **Neon** and connect
+   it to the project. That adds the connection settings for you. Or use any PostgreSQL host and add its connection
+   string yourself as `DATABASE_URL`.
+2. **Add environment variables** (*Project → Settings → Environment Variables*):
 
    | Variable | Value |
    |---|---|
-   | `DATABASE_URL` | The PostgreSQL connection string (the Neon integration adds it for you). |
-   | `SESSION_SECRET` | A long random text, 32+ characters. `openssl rand -base64 48` makes one. |
+   | `DATABASE_URL` | The PostgreSQL connection string. Not needed when a Vercel integration added `POSTGRES_PRISMA_URL` / `POSTGRES_URL` (Supabase) or `DATABASE_URL` (Neon): those are picked up. |
+   | `SESSION_SECRET` | A long random text, 32+ characters. `openssl rand -base64 48` makes one. Required with a database. |
    | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Your first login (password 8+ characters). Optional `ADMIN_NAME`. |
    | `OFFICE_TIMEZONE` | Optional, e.g. `Asia/Dubai` (the default). |
    | `LEADS_API_KEY`, `META_*`, `ANTHROPIC_API_KEY` | Optional, see below. |
 
-4. **Deploy.** Every build creates or updates the database tables (`prisma migrate deploy`) and, only while there
-   are no users yet, creates the admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Later deploys never change passwords.
-   You can remove `ADMIN_PASSWORD` from Vercel once you have signed in.
+3. **Redeploy** (*Deployments → newest deployment → ⋯ → Redeploy*). Every build creates or updates the database tables
+   (`prisma migrate deploy`) and, only while there are no users yet, creates the admin from `ADMIN_EMAIL` /
+   `ADMIN_PASSWORD`. Later deploys never change passwords. You can remove `ADMIN_PASSWORD` once you have signed in.
+
+If something is missing (a wrong connection string, no tables, no login, no secret key), the sign-in page sends you to
+**`/setup`**, which lists what is left and how to fix each item. The demo data is not copied into the new database.
 
 Good to know:
 
 - If your host gives a pooled and a direct connection string, keep the pooled one in `DATABASE_URL`. Set the direct
   one as `DIRECT_URL` (Neon's `DATABASE_URL_UNPOOLED` and Supabase's `POSTGRES_URL_NON_POOLING` are picked up
-  automatically) — migrations use it.
-- Preview deployments also run the migrations against their `DATABASE_URL`. Give *Preview* its own database
-  (or leave it unset: the build then skips the migrations and the preview has no data) so a branch can't change
-  the production tables. A *Production* build without `DATABASE_URL` fails on purpose, with a message saying so.
+  automatically) — migrations use it. Supabase's pooled string (port 6543) needs `?pgbouncer=true` at the end when
+  you paste it yourself; the integration's `POSTGRES_PRISMA_URL` already has it.
+- Preview deployments also run the migrations against their database. Give *Preview* its own database (or leave it
+  without one: it then runs in demo mode) so a branch can't change the production tables.
 - Uploads are limited to 4 MB on Vercel (its request-size limit); elsewhere 10 MB.
 - Backups are your database host's job (Neon/Supabase point-in-time restore). Excel/CSV exports are under *Reports & export*.
 - Start without demo data: don't run the seed. To load demo data into a *test* database, run
